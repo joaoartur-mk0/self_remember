@@ -204,9 +204,11 @@ esquecido em duas semanas; construir o painel de cards seria contradizer a próp
 
 ## 7. Autenticação
 
-JWT de acesso curto (15 min) + refresh token rotativo persistido. Cadastro fechado por
-padrão ([ADR-0001](./docs/adr/0001-self-hosted-inquilino-unico.md)); usuários são criados
-via `cmd/admin`.
+JWT de acesso curto (15 min) + refresh token rotativo persistido, com revogação de toda a
+sessão do usuário no reuso de um token já rotacionado
+([ADR-0008](./docs/adr/0008-refresh-token-rotativo-com-revogacao-em-cadeia.md)). Cadastro
+fechado por padrão ([ADR-0001](./docs/adr/0001-self-hosted-inquilino-unico.md)); usuários
+são criados via `cmd/admin`.
 
 **Verificação de Canal é obrigatória antes da primeira Entrega real.** Um Canal só sai de
 `verified_at IS NULL` depois que um código enviado para ele é devolvido no app. Sem isso,

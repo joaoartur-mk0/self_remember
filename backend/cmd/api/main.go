@@ -16,8 +16,14 @@ import (
 	"self-remember/backend/internal/platform/database"
 	"self-remember/backend/internal/platform/logging"
 	"self-remember/backend/migrations"
+
+	_ "self-remember/backend/docs"
 )
 
+// @title        Self Remember API
+// @version      1.0
+// @description  API do Self Remember. Local/dev apenas: /swagger não é exposto em produção sem Traefik/auth na frente (ARCHITECTURE.md §9, fase de Produção ainda não implementada).
+// @BasePath     /api/v1
 func main() {
 	cfg, err := config.Load()
 	if err != nil {

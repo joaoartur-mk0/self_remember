@@ -1,0 +1,60 @@
+basePath: /api/v1
+definitions:
+  backend_internal_adapters_http.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+info:
+  contact: {}
+  description: 'API do Self Remember. Local/dev apenas: /swagger não é exposto em
+    produção sem Traefik/auth na frente (ARCHITECTURE.md §9, fase de Produção ainda
+    não implementada).'
+  title: Self Remember API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica por e-mail e senha e grava os cookies de sessão (access_token
+        e refresh_token).
+      parameters:
+      - description: E-mail e senha
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/backend_internal_adapters_http.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Login bem-sucedido; cookies de sessão gravados
+        "400":
+          description: Corpo da requisição inválido
+        "401":
+          description: Credenciais inválidas
+      summary: Login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      description: Rotaciona o refresh token do cookie e grava uma nova sessão. Reusar
+        um token já rotacionado revoga todas as sessões ativas do usuário (ADR-0008).
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Sessão renovada; novos cookies gravados
+        "401":
+          description: Refresh token ausente, expirado, revogado ou já reusado
+      summary: Refresh
+      tags:
+      - auth
+swagger: "2.0"

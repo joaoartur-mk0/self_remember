@@ -18,6 +18,8 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   persistido hasheado em `refresh_tokens` (migration `0002`) (F3 da Fundação).
 - `cmd/admin create-user`: cria o primeiro usuário, com senha lida de stdin
   (F4 da Fundação).
+- Swagger em `/swagger/index.html` para os endpoints de autenticação, gerado
+  via swaggo/swag (F5 da Fundação — última etapa).
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

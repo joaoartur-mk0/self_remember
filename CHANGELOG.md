@@ -7,6 +7,9 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- `cmd/api`: esqueleto do processo — config via `SELF_REMEMBER_*`, log estruturado
+  em JSON e `GET /healthz` (F1 da Fundação).
+
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).
 - `ARCHITECTURE.md`: estrutura do sistema, motor de cobrança, modelo de dados e deploy.

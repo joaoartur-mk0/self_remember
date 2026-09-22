@@ -9,6 +9,8 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
 
 - `cmd/api`: esqueleto do processo — config via `SELF_REMEMBER_*`, log estruturado
   em JSON e `GET /healthz` (F1 da Fundação).
+- Migration `0001_users` (goose): tabelas `users` e `user_settings`. Pool GORM
+  aberto sobre a conexão pgx já migrada, sem `AutoMigrate` (F2 da Fundação).
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

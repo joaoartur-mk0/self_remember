@@ -20,14 +20,14 @@ type Config struct {
 // obrigatórios e não têm default: subir com um segredo implícito (ou pior,
 // hardcoded) já foi a causa de mais de um incidente de segurança.
 func Load() (Config, error) {
-	databaseURL, ok := os.LookupEnv("SELF_REMEMBER_DATABASE_URL")
-	if !ok || databaseURL == "" {
-		return Config{}, fmt.Errorf("SELF_REMEMBER_DATABASE_URL é obrigatório")
+	databaseURL, err := RequireEnv("SELF_REMEMBER_DATABASE_URL")
+	if err != nil {
+		return Config{}, err
 	}
 
-	jwtSecret, ok := os.LookupEnv("SELF_REMEMBER_JWT_SECRET")
-	if !ok || jwtSecret == "" {
-		return Config{}, fmt.Errorf("SELF_REMEMBER_JWT_SECRET é obrigatório")
+	jwtSecret, err := RequireEnv("SELF_REMEMBER_JWT_SECRET")
+	if err != nil {
+		return Config{}, err
 	}
 
 	return Config{
@@ -36,6 +36,17 @@ func Load() (Config, error) {
 		DatabaseURL: databaseURL,
 		JWTSecret:   []byte(jwtSecret),
 	}, nil
+}
+
+// RequireEnv lê uma variável de ambiente obrigatória. Usado para segredos e
+// strings de conexão, onde um default silencioso é o problema — cmd/api e
+// cmd/admin compartilham essa regra mesmo sem compartilhar Config inteiro.
+func RequireEnv(key string) (string, error) {
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		return "", fmt.Errorf("%s é obrigatório", key)
+	}
+	return v, nil
 }
 
 func envOrDefault(key, fallback string) string {

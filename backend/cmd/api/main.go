@@ -9,8 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
+	httpadapter "self-remember/backend/internal/adapters/http"
+	"self-remember/backend/internal/adapters/postgres"
+	"self-remember/backend/internal/app/auth"
 	"self-remember/backend/internal/platform/config"
 	"self-remember/backend/internal/platform/database"
 	"self-remember/backend/internal/platform/logging"
@@ -39,16 +40,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	if _, err := database.NewGORM(sqlDB); err != nil {
+	gormDB, err := database.NewGORM(sqlDB)
+	if err != nil {
 		logger.Error("failed to initialize gorm", "error", err)
 		os.Exit(1)
 	}
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.GET("/healthz", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
+	tokens := auth.NewTokenIssuer(cfg.JWTSecret)
+	users := postgres.NewUserRepository(gormDB)
+	refreshTokens := postgres.NewRefreshTokenRepository(gormDB)
+	loginUseCase := auth.NewLoginUseCase(users, refreshTokens, tokens, time.Now)
+	refreshUseCase := auth.NewRefreshUseCase(refreshTokens, tokens, time.Now)
+	authHandler := httpadapter.NewAuthHandler(loginUseCase, refreshUseCase)
+
+	router := httpadapter.NewRouter(authHandler, tokens)
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,

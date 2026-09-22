@@ -12,7 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"self-remember/backend/internal/platform/config"
+	"self-remember/backend/internal/platform/database"
 	"self-remember/backend/internal/platform/logging"
+	"self-remember/backend/migrations"
 )
 
 func main() {
@@ -24,6 +26,23 @@ func main() {
 
 	logger := logging.New(cfg.LogLevel)
 	logger.Info("starting", "http_addr", cfg.HTTPAddr)
+
+	sqlDB, err := database.OpenSQL(cfg.DatabaseURL)
+	if err != nil {
+		logger.Error("failed to connect to database", "error", err)
+		os.Exit(1)
+	}
+	defer sqlDB.Close()
+
+	if err := database.Migrate(context.Background(), sqlDB, migrations.FS); err != nil {
+		logger.Error("failed to apply migrations", "error", err)
+		os.Exit(1)
+	}
+
+	if _, err := database.NewGORM(sqlDB); err != nil {
+		logger.Error("failed to initialize gorm", "error", err)
+		os.Exit(1)
+	}
 
 	router := gin.New()
 	router.Use(gin.Recovery())

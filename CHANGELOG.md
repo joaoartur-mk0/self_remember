@@ -16,6 +16,8 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
 - Autenticação: `POST /api/v1/auth/login` e `/auth/refresh`, JWT de acesso
   (15 min) em cookie `HttpOnly` + `SameSite=Strict`, refresh token rotativo
   persistido hasheado em `refresh_tokens` (migration `0002`) (F3 da Fundação).
+- `cmd/admin create-user`: cria o primeiro usuário, com senha lida de stdin
+  (F4 da Fundação).
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

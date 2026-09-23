@@ -12,7 +12,9 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 
+	"self-remember/backend/internal/adapters/logchannel"
 	"self-remember/backend/internal/adapters/postgres"
+	"self-remember/backend/internal/domain/channel"
 	"self-remember/backend/internal/jobs"
 	"self-remember/backend/internal/platform/config"
 	"self-remember/backend/internal/platform/database"
@@ -50,6 +52,8 @@ func main() {
 
 	commitmentRepo := postgres.NewCommitmentRepository(gormDB)
 	occurrenceRepo := postgres.NewOccurrenceRepository(gormDB)
+	deliveryRepo := postgres.NewDeliveryRepository(gormDB)
+	channelRepo := postgres.NewChannelRepository(gormDB)
 
 	dbPool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -72,10 +76,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	fakeChannel := logchannel.New(channel.KindWhatsApp, logger)
+
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewMaterializadorWorker(commitmentRepo, occurrenceRepo, logger, time.Now))
-	// Scanner, Entregador e Guardião são registrados aqui conforme cada um é
-	// implementado.
+	river.AddWorker(workers, jobs.NewScannerWorker(dbPool, logger, time.Now))
+	river.AddWorker(workers, jobs.NewEntregadorWorker(deliveryRepo, channelRepo, occurrenceRepo, fakeChannel, logger))
+	// Guardião é registrado aqui conforme é implementado.
 
 	riverClient, err := river.NewClient(riverDriver, &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -87,6 +94,13 @@ func main() {
 				river.PeriodicInterval(jobs.MaterializadorInterval),
 				func() (river.JobArgs, *river.InsertOpts) {
 					return jobs.MaterializadorArgs{}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
+			),
+			river.NewPeriodicJob(
+				river.PeriodicInterval(jobs.ScannerInterval),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return jobs.ScannerArgs{}, nil
 				},
 				&river.PeriodicJobOpts{RunOnStart: true},
 			),

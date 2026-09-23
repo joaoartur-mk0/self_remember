@@ -134,6 +134,25 @@ func (r *OccurrenceRepository) FindNaggingWithProfile(ctx context.Context) ([]Oc
 	return result, nil
 }
 
+// OccurrenceSummary é o que o Entregador precisa para compor o texto de uma
+// Cobrança: o título do Compromisso e o vencimento da Ocorrência.
+type OccurrenceSummary struct {
+	Title string
+	DueAt time.Time
+}
+
+// FindSummary busca o título do Compromisso e o vencimento de uma Ocorrência.
+func (r *OccurrenceRepository) FindSummary(ctx context.Context, id uuid.UUID) (OccurrenceSummary, error) {
+	var s OccurrenceSummary
+	err := r.db.WithContext(ctx).
+		Table("occurrences AS o").
+		Select("c.title, o.due_at").
+		Joins("JOIN commitments c ON c.id = o.commitment_id").
+		Where("o.id = ?", id).
+		Scan(&s).Error
+	return s, err
+}
+
 // FindActiveDueBefore devolve Ocorrências em due ou nagging cujo vencimento
 // é anterior a threshold — candidatas ao Horizonte de Relevância
 // (ARCHITECTURE.md §3.4).

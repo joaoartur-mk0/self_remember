@@ -104,14 +104,18 @@ func TestDismiss(t *testing.T) {
 }
 
 func TestAbandon(t *testing.T) {
-	o := newOccurrence(StateNagging)
-	o, err := o.Abandon()
-	mustNoErr(t, err)
-	if o.State != StateAbandoned {
-		t.Fatalf("state = %v, want %v", o.State, StateAbandoned)
-	}
-	if !o.State.Terminal() {
-		t.Fatal("abandoned deveria ser terminal")
+	for _, from := range []State{StateDue, StateNagging} {
+		t.Run(string(from), func(t *testing.T) {
+			o := newOccurrence(from)
+			o, err := o.Abandon()
+			mustNoErr(t, err)
+			if o.State != StateAbandoned {
+				t.Fatalf("state = %v, want %v", o.State, StateAbandoned)
+			}
+			if !o.State.Terminal() {
+				t.Fatal("abandoned deveria ser terminal")
+			}
+		})
 	}
 }
 
@@ -136,7 +140,7 @@ func TestInvalidTransitions(t *testing.T) {
 		{"Snooze de due", StateDue, func(o Occurrence) (Occurrence, error) { return o.Snooze(time.Now().Add(time.Hour)) }},
 		{"Resume de due", StateDue, func(o Occurrence) (Occurrence, error) { return o.Resume() }},
 		{"Resume de nagging", StateNagging, func(o Occurrence) (Occurrence, error) { return o.Resume() }},
-		{"Abandon de due", StateDue, func(o Occurrence) (Occurrence, error) { return o.Abandon() }},
+		{"Abandon de pending", StatePending, func(o Occurrence) (Occurrence, error) { return o.Abandon() }},
 		{"Abandon de abandoned", StateAbandoned, func(o Occurrence) (Occurrence, error) { return o.Abandon() }},
 	}
 

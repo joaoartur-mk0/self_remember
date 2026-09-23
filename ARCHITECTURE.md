@@ -125,10 +125,11 @@ Apenas a forma; o DDL fica em `backend/migrations/`.
 **Estados de uma Ocorrência:**
 
 ```
-pending ──▶ due ──▶ nagging ──┬──▶ done        (Conclusão)
-                              ├──▶ snoozed ──▶ due   (Adiamento; a escada retoma, não reinicia)
-                              ├──▶ dismissed  (Desistência)
-                              └──▶ abandoned  (escada esgotada ou fora do Horizonte)
+pending ──▶ due ──┬──▶ nagging ──┬──▶ done        (Conclusão)
+                  │              ├──▶ snoozed ──▶ due   (Adiamento; a escada retoma, não reinicia)
+                  │              ├──▶ dismissed  (Desistência)
+                  │              └──▶ abandoned  (escada esgotada ou fora do Horizonte)
+                  └──────────────────▶ abandoned  (fora do Horizonte antes de qualquer Cobrança)
 ```
 
 `done`, `dismissed` e `abandoned` são terminais. Nenhuma transição apaga linha: o

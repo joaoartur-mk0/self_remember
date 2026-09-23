@@ -82,12 +82,14 @@ func (o Occurrence) Resume() (Occurrence, error) {
 	return o, nil
 }
 
-// Abandon transiciona nagging → abandoned: a escada do Perfil se esgotou sem
-// Reconhecimento, ou a Ocorrência saiu do Horizonte de Relevância
-// (occurrence/quiethours.go). Diferente de Dismiss: aqui o usuário nunca se
-// manifestou (CONTEXT.md).
+// Abandon transiciona due ou nagging → abandoned: a escada do Perfil se
+// esgotou sem Reconhecimento, ou a Ocorrência saiu do Horizonte de
+// Relevância (occurrence/quiethours.go) — nesse segundo caso, mesmo uma
+// Ocorrência que nunca chegou a ser cobrada (ainda em due) é Abandonada
+// "nunca entregue" (ARCHITECTURE.md §3.4). Diferente de Dismiss: aqui o
+// usuário nunca se manifestou (CONTEXT.md).
 func (o Occurrence) Abandon() (Occurrence, error) {
-	if o.State != StateNagging {
+	if o.State != StateDue && o.State != StateNagging {
 		return o, &TransitionError{From: o.State, Method: "Abandon"}
 	}
 	o.State = StateAbandoned

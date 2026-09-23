@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -62,19 +63,19 @@ func NewOccurrenceRepository(db *gorm.DB) *OccurrenceRepository {
 // se existe algum. O Materializador usa isso como cursor para não regerar
 // Ocorrências já existentes.
 func (r *OccurrenceRepository) LatestDueAt(ctx context.Context, commitmentID uuid.UUID) (time.Time, bool, error) {
-	var dueAt *time.Time
+	var result sql.NullTime
 	err := r.db.WithContext(ctx).
 		Model(&OccurrenceModel{}).
 		Where("commitment_id = ?", commitmentID).
 		Select("MAX(due_at)").
-		Scan(&dueAt).Error
+		Scan(&result).Error
 	if err != nil {
 		return time.Time{}, false, err
 	}
-	if dueAt == nil {
+	if !result.Valid {
 		return time.Time{}, false, nil
 	}
-	return *dueAt, true, nil
+	return result.Time, true, nil
 }
 
 // Create insere uma nova Ocorrência. Devolve created=false sem erro se já

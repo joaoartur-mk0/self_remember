@@ -38,6 +38,28 @@ func Load() (Config, error) {
 	}, nil
 }
 
+// WorkerConfig contém a configuração necessária para o processo cmd/worker.
+// Separado de Config porque o worker não serve HTTP e não assina JWT — exigir
+// SELF_REMEMBER_JWT_SECRET dele só para satisfazer um Load() genérico seria
+// pedir um segredo que esse processo nunca usa.
+type WorkerConfig struct {
+	LogLevel    string
+	DatabaseURL string
+}
+
+// LoadWorker lê a configuração do cmd/worker.
+func LoadWorker() (WorkerConfig, error) {
+	databaseURL, err := RequireEnv("SELF_REMEMBER_DATABASE_URL")
+	if err != nil {
+		return WorkerConfig{}, err
+	}
+
+	return WorkerConfig{
+		LogLevel:    envOrDefault("SELF_REMEMBER_LOG_LEVEL", "info"),
+		DatabaseURL: databaseURL,
+	}, nil
+}
+
 // RequireEnv lê uma variável de ambiente obrigatória. Usado para segredos e
 // strings de conexão, onde um default silencioso é o problema — cmd/api e
 // cmd/admin compartilham essa regra mesmo sem compartilhar Config inteiro.

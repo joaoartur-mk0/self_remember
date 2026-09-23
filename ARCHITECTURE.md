@@ -172,7 +172,7 @@ como interface.
 
 ```go
 type Channel interface {
-    Kind() string
+    Kind() Kind   // tipo próprio, não string cru — ver internal/domain/channel
     Send(ctx context.Context, msg Message) (ProviderID, error)
     HealthCheck(ctx context.Context) error
     SupportsInboundAck() bool   // false em todos os adaptadores do MVP

@@ -20,6 +20,21 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   (F4 da Fundação).
 - Swagger em `/swagger/index.html` para os endpoints de autenticação, gerado
   via swaggo/swag (F5 da Fundação — última etapa).
+- Porta `Channel` em domínio puro (`internal/domain/channel`), com `Kind`
+  tipado e `SupportsInboundAck` (ADR-0006).
+- Entidade `Commitment` (`internal/domain/commitment`) com `NagProfile`
+  (ADR-0004), `CarryOverPolicy` e validação.
+- Recorrência de Compromisso com fuso (`NextOccurrenceAfter`, via
+  `teambition/rrule-go`), testada atravessando uma virada de horário de
+  verão real (America/New_York, 2024-03-10).
+- Máquina de estados da Ocorrência (`internal/domain/occurrence`): transições
+  literais do diagrama em `ARCHITECTURE.md` §4, com `Snooze`/`Resume`
+  preservando o Degrau atual.
+- Escada de insistência (`DelayForStep`, `ShouldEscalate`) para os três
+  Perfis do ADR-0004, incluindo o Implacável sem teto.
+- Janela de Silêncio (`QuietHours`) e Horizonte de Relevância (7 dias) em
+  domínio puro — encerra a Fase 2 (Domínio puro): tudo com relógio injetado,
+  coberto por testes, sem nenhuma linha de rede.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

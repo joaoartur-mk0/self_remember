@@ -9,3 +9,6 @@
 
 # Claude Code
 .claude/settings.local.json
+
+# graphify (cache local, com caminhos absolutos da máquina)
+graphify-out/

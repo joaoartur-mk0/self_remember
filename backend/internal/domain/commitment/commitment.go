@@ -62,13 +62,21 @@ var (
 )
 
 // Commitment é o Compromisso: a intenção duradoura, com ou sem recorrência.
-// RecurrenceRule vazio significa Compromisso único, com uma só Ocorrência.
+// RecurrenceRule vazio significa Compromisso único, com uma só Ocorrência
+// vencendo em RecurrenceStart.
 type Commitment struct {
-	ID              uuid.UUID
-	UserID          uuid.UUID
-	AreaID          uuid.UUID
-	Title           string
+	ID     uuid.UUID
+	UserID uuid.UUID
+	AreaID uuid.UUID
+	Title  string
+
+	// RecurrenceStart é o DTSTART (RFC 5545): a data e o horário de parede do
+	// primeiro vencimento. Para Compromissos não recorrentes, é o próprio
+	// vencimento. Ver recurrence.go — os componentes de data/hora é que
+	// importam, não o *time.Location anexado a este valor.
+	RecurrenceStart time.Time
 	RecurrenceRule  string
+
 	NagProfile      NagProfile
 	CarryOverPolicy CarryOverPolicy
 	ArchivedAt      *time.Time

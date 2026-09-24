@@ -12,8 +12,9 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 
-	"self-remember/backend/internal/adapters/logchannel"
+	"self-remember/backend/internal/adapters/evolution"
 	"self-remember/backend/internal/adapters/postgres"
+	"self-remember/backend/internal/adapters/smtp"
 	"self-remember/backend/internal/domain/channel"
 	"self-remember/backend/internal/jobs"
 	"self-remember/backend/internal/platform/config"
@@ -76,13 +77,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	fakeChannel := logchannel.New(channel.KindWhatsApp, logger)
+	smtpChannel, err := smtp.New(smtp.Config{
+		Host:     cfg.SMTP.Host,
+		Port:     cfg.SMTP.Port,
+		Username: cfg.SMTP.Username,
+		Password: cfg.SMTP.Password,
+		From:     cfg.SMTP.From,
+	})
+	if err != nil {
+		logger.Error("failed to configure smtp channel", "error", err)
+		os.Exit(1)
+	}
+	evolutionChannel := evolution.New(evolution.Config{
+		BaseURL:              cfg.Evolution.BaseURL,
+		APIKey:               cfg.Evolution.APIKey,
+		Instance:             cfg.Evolution.Instance,
+		MaxMessagesPerMinute: cfg.Evolution.MaxMessagesPerMinute,
+	}, nil)
+
+	senders := map[channel.Kind]channel.Channel{
+		channel.KindEmail:    smtpChannel,
+		channel.KindWhatsApp: evolutionChannel,
+	}
 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, jobs.NewMaterializadorWorker(commitmentRepo, occurrenceRepo, logger, time.Now))
 	river.AddWorker(workers, jobs.NewScannerWorker(dbPool, logger, time.Now))
-	river.AddWorker(workers, jobs.NewEntregadorWorker(deliveryRepo, channelRepo, occurrenceRepo, fakeChannel, logger))
+	river.AddWorker(workers, jobs.NewEntregadorWorker(deliveryRepo, channelRepo, occurrenceRepo, senders, logger))
 	river.AddWorker(workers, jobs.NewGuardiaoWorker(occurrenceRepo, logger, time.Now))
+	river.AddWorker(workers, jobs.NewVerificadorCanalWorker(evolutionChannel, smtpChannel, cfg.OpsEmail, logger))
 
 	riverClient, err := river.NewClient(riverDriver, &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -108,6 +131,13 @@ func main() {
 				river.PeriodicInterval(jobs.GuardiaoInterval),
 				func() (river.JobArgs, *river.InsertOpts) {
 					return jobs.GuardiaoArgs{}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
+			),
+			river.NewPeriodicJob(
+				river.PeriodicInterval(jobs.VerificadorCanalInterval),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return jobs.VerificadorCanalArgs{}, nil
 				},
 				&river.PeriodicJobOpts{RunOnStart: true},
 			),

@@ -103,7 +103,12 @@ Aplica os estados terminais que ninguém mais aplica:
 - Compromissos recorrentes com `carry_over = replace` → a Ocorrência anterior é Abandonada
   quando a nova vence.
 - Compromissos com Abandono repetido → marcados para sugestão de arquivamento no painel.
-- Health check da instância EvolutionAPI; sessão caída dispara alerta por e-mail.
+
+O health check da instância EvolutionAPI **não** roda neste ciclo de 5 minutos: ADR-0005 o
+marca como mitigação obrigatória "a cada minuto", mais fino que o resto do Guardião. Vive
+num `PeriodicJob` próprio (`internal/jobs/verificador_canal.go`) que, ao detectar sessão
+caída, dispara um alerta por e-mail via SMTP — Canal que não depende da Evolution para
+funcionar.
 
 ## 4. Modelo de dados
 

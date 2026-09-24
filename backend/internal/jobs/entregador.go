@@ -30,16 +30,16 @@ func (EntregadorArgs) Kind() string { return "entregador" }
 // linha em deliveries é inserida primeiro; se colidir com uma já existente,
 // esta Entrega já foi feita e o job termina com sucesso sem enviar nada.
 //
-// sender é o único Channel disponível na fase de Motor — o canal falso de
-// log (internal/adapters/logchannel). Escolher o adaptador real por Kind é
-// tarefa da fase de Canais reais.
+// senders mapeia Kind ao adaptador real daquele Canal (SMTP, EvolutionAPI).
+// Um Kind sem adaptador registrado é tratado como falha de envio — cai na
+// mesma cadeia de fallback de qualquer outra falha de Canal.
 type EntregadorWorker struct {
 	river.WorkerDefaults[EntregadorArgs]
 
 	deliveries  *postgres.DeliveryRepository
 	channels    *postgres.ChannelRepository
 	occurrences *postgres.OccurrenceRepository
-	sender      channel.Channel
+	senders     map[channel.Kind]channel.Channel
 	logger      *slog.Logger
 }
 
@@ -47,14 +47,14 @@ func NewEntregadorWorker(
 	deliveries *postgres.DeliveryRepository,
 	channels *postgres.ChannelRepository,
 	occurrences *postgres.OccurrenceRepository,
-	sender channel.Channel,
+	senders map[channel.Kind]channel.Channel,
 	logger *slog.Logger,
 ) *EntregadorWorker {
 	return &EntregadorWorker{
 		deliveries:  deliveries,
 		channels:    channels,
 		occurrences: occurrences,
-		sender:      sender,
+		senders:     senders,
 		logger:      logger,
 	}
 }
@@ -92,7 +92,12 @@ func (w *EntregadorWorker) Work(ctx context.Context, job *river.Job[EntregadorAr
 		return fmt.Errorf("buscar resumo da ocorrência: %w", err)
 	}
 
-	providerID, sendErr := w.sender.Send(ctx, channel.Message{
+	sender, ok := w.senders[channel.Kind(ch.Kind)]
+	if !ok {
+		return w.handleSendFailure(ctx, delivery.ID, ch, args, fmt.Errorf("nenhum adaptador registrado para o kind %q", ch.Kind))
+	}
+
+	providerID, sendErr := sender.Send(ctx, channel.Message{
 		To:            ch.Address,
 		Body:          fmt.Sprintf("%s venceu em %s", summary.Title, summary.DueAt.Format("02/01 15:04")),
 		CorrelationID: correlationID,

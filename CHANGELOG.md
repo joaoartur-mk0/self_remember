@@ -49,6 +49,16 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   esgotada e Horizonte de Relevância). Canal falso de log
   (`internal/adapters/logchannel`) prova o motor de ponta a ponta sem
   nenhum adaptador real ainda — encerra a Fase 3 (Motor).
+- Canal de e-mail real (`internal/adapters/smtp`, via `wneessen/go-mail`),
+  TLS oportunista para não depender de STARTTLS em ambiente local.
+- Canal de WhatsApp real (`internal/adapters/evolution`, HTTP direto contra a
+  EvolutionAPI): teto de mensagens por minuto com espaçamento aleatório e
+  `HealthCheck` de sessão, ambos exigidos por ADR-0005.
+- `internal/jobs/verificador_canal.go`: `PeriodicJob` de 1 minuto dedicado ao
+  health check da EvolutionAPI (cadência própria do ADR-0005, mais fina que
+  o ciclo de 5 minutos do resto do Guardião), com alerta por e-mail na
+  transição para sessão caída. Remove o canal falso de log — encerra a
+  Fase 4 (Canais reais).
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

@@ -35,6 +35,20 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
 - Janela de Silêncio (`QuietHours`) e Horizonte de Relevância (7 dias) em
   domínio puro — encerra a Fase 2 (Domínio puro): tudo com relógio injetado,
   coberto por testes, sem nenhuma linha de rede.
+- Correção de domínio: `Occurrence.Abandon` passa a valer também a partir de
+  `due`, não só `nagging` — cobre o caso do ARCHITECTURE.md §3.4 em que uma
+  Ocorrência sai do Horizonte de Relevância sem nunca ter sido cobrada.
+  Diagrama de estados em `ARCHITECTURE.md` §4 atualizado junto.
+- Migrations `0003`–`0007` (goose): `areas`, `channels`, `commitments`,
+  `occurrences`, `deliveries` — idempotência do Materializador via
+  `UNIQUE(commitment_id, due_at)` e do Entregador via
+  `UNIQUE(occurrence_id, step_index, channel_id)`.
+- `cmd/worker`: motor de cobrança sobre River (ADR-0007) — Materializador
+  (`1h`), Scanner (`1m`, único produtor de jobs de Entrega, ADR-0003),
+  Entregador (idempotente, com cadeia de fallback) e Guardião (`5m`, escada
+  esgotada e Horizonte de Relevância). Canal falso de log
+  (`internal/adapters/logchannel`) prova o motor de ponta a ponta sem
+  nenhum adaptador real ainda — encerra a Fase 3 (Motor).
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

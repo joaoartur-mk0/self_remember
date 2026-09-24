@@ -82,7 +82,7 @@ func main() {
 	river.AddWorker(workers, jobs.NewMaterializadorWorker(commitmentRepo, occurrenceRepo, logger, time.Now))
 	river.AddWorker(workers, jobs.NewScannerWorker(dbPool, logger, time.Now))
 	river.AddWorker(workers, jobs.NewEntregadorWorker(deliveryRepo, channelRepo, occurrenceRepo, fakeChannel, logger))
-	// Guardião é registrado aqui conforme é implementado.
+	river.AddWorker(workers, jobs.NewGuardiaoWorker(occurrenceRepo, logger, time.Now))
 
 	riverClient, err := river.NewClient(riverDriver, &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -101,6 +101,13 @@ func main() {
 				river.PeriodicInterval(jobs.ScannerInterval),
 				func() (river.JobArgs, *river.InsertOpts) {
 					return jobs.ScannerArgs{}, nil
+				},
+				&river.PeriodicJobOpts{RunOnStart: true},
+			),
+			river.NewPeriodicJob(
+				river.PeriodicInterval(jobs.GuardiaoInterval),
+				func() (river.JobArgs, *river.InsertOpts) {
+					return jobs.GuardiaoArgs{}, nil
 				},
 				&river.PeriodicJobOpts{RunOnStart: true},
 			),

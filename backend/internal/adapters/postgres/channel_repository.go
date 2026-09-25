@@ -12,14 +12,16 @@ import (
 // cifrada) não é lido nem escrito por este repositório ainda — nenhum
 // adaptador real existe até a fase de Canais (só o canal falso de log).
 type ChannelModel struct {
-	ID            uuid.UUID  `gorm:"column:id"`
-	UserID        uuid.UUID  `gorm:"column:user_id"`
-	Kind          string     `gorm:"column:kind"`
-	Address       string     `gorm:"column:address"`
-	VerifiedAt    *time.Time `gorm:"column:verified_at"`
-	FallbackOrder int        `gorm:"column:fallback_order"`
-	CreatedAt     time.Time  `gorm:"column:created_at"`
-	UpdatedAt     time.Time  `gorm:"column:updated_at"`
+	ID                    uuid.UUID  `gorm:"column:id"`
+	UserID                uuid.UUID  `gorm:"column:user_id"`
+	Kind                  string     `gorm:"column:kind"`
+	Address               string     `gorm:"column:address"`
+	VerifiedAt            *time.Time `gorm:"column:verified_at"`
+	FallbackOrder         int        `gorm:"column:fallback_order"`
+	VerificationCodeHash  *string    `gorm:"column:verification_code_hash"`
+	VerificationExpiresAt *time.Time `gorm:"column:verification_expires_at"`
+	CreatedAt             time.Time  `gorm:"column:created_at"`
+	UpdatedAt             time.Time  `gorm:"column:updated_at"`
 }
 
 func (ChannelModel) TableName() string {
@@ -33,6 +35,56 @@ type ChannelRepository struct {
 
 func NewChannelRepository(db *gorm.DB) *ChannelRepository {
 	return &ChannelRepository{db: db}
+}
+
+// Create insere um novo Canal, ainda não verificado.
+func (r *ChannelRepository) Create(ctx context.Context, m *ChannelModel) error {
+	return r.db.WithContext(ctx).Create(m).Error
+}
+
+// FindByUser lista os Canais de um usuário, na ordem de fallback.
+func (r *ChannelRepository) FindByUser(ctx context.Context, userID uuid.UUID) ([]ChannelModel, error) {
+	var channels []ChannelModel
+	err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("fallback_order ASC").
+		Find(&channels).Error
+	return channels, err
+}
+
+// FindByIDForUser busca um Canal pelo ID, restrito ao usuário informado —
+// isolamento por user_id (ADR-0001).
+func (r *ChannelRepository) FindByIDForUser(ctx context.Context, id, userID uuid.UUID) (*ChannelModel, error) {
+	var m ChannelModel
+	if err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&m).Error; err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+// SetVerificationCode grava o hash do código de verificação e sua validade.
+// Um Canal só pode receber Entregas depois de Verificado (ARCHITECTURE.md
+// §7).
+func (r *ChannelRepository) SetVerificationCode(ctx context.Context, id uuid.UUID, codeHash string, expiresAt time.Time) error {
+	return r.db.WithContext(ctx).
+		Model(&ChannelModel{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"verification_code_hash":  codeHash,
+			"verification_expires_at": expiresAt,
+		}).Error
+}
+
+// MarkVerified marca o Canal como verificado e limpa o código usado.
+func (r *ChannelRepository) MarkVerified(ctx context.Context, id uuid.UUID, at time.Time) error {
+	return r.db.WithContext(ctx).
+		Model(&ChannelModel{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"verified_at":             at,
+			"verification_code_hash":  nil,
+			"verification_expires_at": nil,
+		}).Error
 }
 
 // FindByID busca um Canal pelo ID.

@@ -105,6 +105,75 @@ func (r *OccurrenceRepository) UpdateState(ctx context.Context, id uuid.UUID, st
 		Update("state", string(state)).Error
 }
 
+// FindByIDForUser busca uma Ocorrência pelo ID, restrito a Compromissos do
+// usuário informado — isolamento por user_id (ADR-0001). Retorna
+// gorm.ErrRecordNotFound se não existir ou não pertencer a ele.
+func (r *OccurrenceRepository) FindByIDForUser(ctx context.Context, id, userID uuid.UUID) (occurrence.Occurrence, error) {
+	var m OccurrenceModel
+	err := r.db.WithContext(ctx).
+		Select("occurrences.*").
+		Joins("JOIN commitments ON commitments.id = occurrences.commitment_id").
+		Where("occurrences.id = ? AND commitments.user_id = ?", id, userID).
+		First(&m).Error
+	if err != nil {
+		return occurrence.Occurrence{}, err
+	}
+	return m.toDomain(), nil
+}
+
+// OccurrenceListItem é uma Ocorrência junto do título do seu Compromisso —
+// o que a tela Hoje precisa para listar.
+type OccurrenceListItem struct {
+	Occurrence occurrence.Occurrence
+	Title      string
+}
+
+// FindDueForUser lista, para a tela Hoje, as Ocorrências não terminais de um
+// usuário cujo vencimento já chegou ou chega até endOfDay (calculado pelo
+// chamador no fuso do usuário — este repositório não sabe de fusos).
+func (r *OccurrenceRepository) FindDueForUser(ctx context.Context, userID uuid.UUID, endOfDay time.Time) ([]OccurrenceListItem, error) {
+	type row struct {
+		OccurrenceModel `gorm:"embedded"`
+		Title           string
+	}
+	var rows []row
+
+	err := r.db.WithContext(ctx).
+		Table("occurrences AS o").
+		Select("o.*, c.title").
+		Joins("JOIN commitments c ON c.id = o.commitment_id").
+		Where("c.user_id = ? AND o.state NOT IN (?, ?, ?) AND o.due_at <= ?",
+			userID, string(occurrence.StateDone), string(occurrence.StateDismissed), string(occurrence.StateAbandoned), endOfDay).
+		Order("o.due_at ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]OccurrenceListItem, 0, len(rows))
+	for _, rw := range rows {
+		result = append(result, OccurrenceListItem{
+			Occurrence: rw.OccurrenceModel.toDomain(),
+			Title:      rw.Title,
+		})
+	}
+	return result, nil
+}
+
+// Save persiste uma Ocorrência inteira após uma transição de domínio
+// (Complete, Dismiss, Snooze, Resume) — todas mudam state, e Snooze também
+// muda due_at, então um único método genérico evita um por transição.
+func (r *OccurrenceRepository) Save(ctx context.Context, occ occurrence.Occurrence) error {
+	return r.db.WithContext(ctx).
+		Model(&OccurrenceModel{}).
+		Where("id = ?", occ.ID).
+		Updates(map[string]any{
+			"state":        string(occ.State),
+			"current_step": occ.CurrentStep,
+			"due_at":       occ.DueAt,
+		}).Error
+}
+
 // FindNaggingWithProfile devolve as Ocorrências em nagging junto do
 // NagProfile do seu Compromisso, para o Guardião checar teto da escada.
 func (r *OccurrenceRepository) FindNaggingWithProfile(ctx context.Context) ([]OccurrenceWithProfile, error) {

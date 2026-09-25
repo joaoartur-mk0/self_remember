@@ -10,10 +10,17 @@ import (
 	"self-remember/backend/internal/app/auth"
 )
 
+// Handlers agrupa os handlers de negócio do cmd/api — um parâmetro só, em
+// vez de uma lista de argumentos que cresce a cada rota nova.
+type Handlers struct {
+	Auth  *AuthHandler
+	Area  *AreaHandler
+	Label *LabelHandler
+}
+
 // NewRouter monta as rotas do cmd/api: health check e swagger públicos,
-// autenticação, e /ping como rota protegida de referência para o
-// AuthMiddleware até que exista uma rota de negócio de verdade.
-func NewRouter(authHandler *AuthHandler, tokens *auth.TokenIssuer) *gin.Engine {
+// autenticação, e as rotas de negócio atrás do AuthMiddleware.
+func NewRouter(h Handlers, tokens *auth.TokenIssuer) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
@@ -29,14 +36,20 @@ func NewRouter(authHandler *AuthHandler, tokens *auth.TokenIssuer) *gin.Engine {
 	v1 := router.Group("/api/v1")
 
 	authGroup := v1.Group("/auth")
-	authGroup.POST("/login", authHandler.Login)
-	authGroup.POST("/refresh", authHandler.Refresh)
+	authGroup.POST("/login", h.Auth.Login)
+	authGroup.POST("/refresh", h.Auth.Refresh)
 
 	protected := v1.Group("")
 	protected.Use(AuthMiddleware(tokens))
 	protected.GET("/ping", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
+
+	protected.POST("/areas", h.Area.Create)
+	protected.GET("/areas", h.Area.List)
+
+	protected.POST("/labels", h.Label.Create)
+	protected.GET("/labels", h.Label.List)
 
 	return router
 }

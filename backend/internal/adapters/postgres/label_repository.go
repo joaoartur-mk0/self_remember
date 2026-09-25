@@ -29,8 +29,17 @@ func NewLabelRepository(db *gorm.DB) *LabelRepository {
 	return &LabelRepository{db: db}
 }
 
+// Create insere uma nova Etiqueta. Devolve ErrDuplicateName se o usuário já
+// tiver uma Etiqueta com o mesmo nome (UNIQUE(user_id, name), migration
+// 0008).
 func (r *LabelRepository) Create(ctx context.Context, l *LabelModel) error {
-	return r.db.WithContext(ctx).Create(l).Error
+	if err := r.db.WithContext(ctx).Create(l).Error; err != nil {
+		if isUniqueViolation(err) {
+			return ErrDuplicateName
+		}
+		return err
+	}
+	return nil
 }
 
 // FindByUser lista as Etiquetas de um usuário.

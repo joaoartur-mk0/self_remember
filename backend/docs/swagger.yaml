@@ -1,6 +1,38 @@
 basePath: /api/v1
 definitions:
-  backend_internal_adapters_http.loginRequest:
+  http.areaResponse:
+    properties:
+      color:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  http.createAreaRequest:
+    properties:
+      color:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  http.createLabelRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  http.labelResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  http.loginRequest:
     properties:
       email:
         type: string
@@ -18,6 +50,44 @@ info:
   title: Self Remember API
   version: "1.0"
 paths:
+  /areas:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/http.areaResponse'
+            type: array
+      summary: Listar Áreas
+      tags:
+      - areas
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Nome e cor (opcional) da Área
+        in: body
+        name: area
+        required: true
+        schema:
+          $ref: '#/definitions/http.createAreaRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.areaResponse'
+        "400":
+          description: Corpo da requisição inválido
+        "409":
+          description: Já existe uma Área com este nome
+      summary: Criar Área
+      tags:
+      - areas
   /auth/login:
     post:
       consumes:
@@ -30,7 +100,7 @@ paths:
         name: credentials
         required: true
         schema:
-          $ref: '#/definitions/backend_internal_adapters_http.loginRequest'
+          $ref: '#/definitions/http.loginRequest'
       produces:
       - application/json
       responses:
@@ -57,4 +127,42 @@ paths:
       summary: Refresh
       tags:
       - auth
+  /labels:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/http.labelResponse'
+            type: array
+      summary: Listar Etiquetas
+      tags:
+      - labels
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Nome da Etiqueta
+        in: body
+        name: label
+        required: true
+        schema:
+          $ref: '#/definitions/http.createLabelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.labelResponse'
+        "400":
+          description: Corpo da requisição inválido
+        "409":
+          description: Já existe uma Etiqueta com este nome
+      summary: Criar Etiqueta
+      tags:
+      - labels
 swagger: "2.0"

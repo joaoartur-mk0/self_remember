@@ -55,11 +55,18 @@ func main() {
 	tokens := auth.NewTokenIssuer(cfg.JWTSecret)
 	users := postgres.NewUserRepository(gormDB)
 	refreshTokens := postgres.NewRefreshTokenRepository(gormDB)
+	areas := postgres.NewAreaRepository(gormDB)
+	labels := postgres.NewLabelRepository(gormDB)
 	loginUseCase := auth.NewLoginUseCase(users, refreshTokens, tokens, time.Now)
 	refreshUseCase := auth.NewRefreshUseCase(refreshTokens, tokens, time.Now)
-	authHandler := httpadapter.NewAuthHandler(loginUseCase, refreshUseCase)
 
-	router := httpadapter.NewRouter(authHandler, tokens)
+	handlers := httpadapter.Handlers{
+		Auth:  httpadapter.NewAuthHandler(loginUseCase, refreshUseCase),
+		Area:  httpadapter.NewAreaHandler(areas),
+		Label: httpadapter.NewLabelHandler(labels),
+	}
+
+	router := httpadapter.NewRouter(handlers, tokens)
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,

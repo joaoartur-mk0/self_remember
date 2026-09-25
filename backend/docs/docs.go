@@ -15,6 +15,65 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/areas": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "areas"
+                ],
+                "summary": "Listar Áreas",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/http.areaResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "areas"
+                ],
+                "summary": "Criar Área",
+                "parameters": [
+                    {
+                        "description": "Nome e cor (opcional) da Área",
+                        "name": "area",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createAreaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/http.areaResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Corpo da requisição inválido"
+                    },
+                    "409": {
+                        "description": "Já existe uma Área com este nome"
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Autentica por e-mail e senha e grava os cookies de sessão (access_token e refresh_token).",
@@ -35,7 +94,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/backend_internal_adapters_http.loginRequest"
+                            "$ref": "#/definitions/http.loginRequest"
                         }
                     }
                 ],
@@ -71,10 +130,119 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/labels": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "labels"
+                ],
+                "summary": "Listar Etiquetas",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/http.labelResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "labels"
+                ],
+                "summary": "Criar Etiqueta",
+                "parameters": [
+                    {
+                        "description": "Nome da Etiqueta",
+                        "name": "label",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createLabelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/http.labelResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Corpo da requisição inválido"
+                    },
+                    "409": {
+                        "description": "Já existe uma Etiqueta com este nome"
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "backend_internal_adapters_http.loginRequest": {
+        "http.areaResponse": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.createAreaRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.createLabelRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.labelResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.loginRequest": {
             "type": "object",
             "required": [
                 "email",

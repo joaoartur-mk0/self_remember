@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"self-remember/backend/internal/app/auth"
 )
@@ -32,4 +33,12 @@ func AuthMiddleware(tokens *auth.TokenIssuer) gin.HandlerFunc {
 		c.Set(contextUserIDKey, userID)
 		c.Next()
 	}
+}
+
+// userIDFrom lê o ID do usuário autenticado, gravado pelo AuthMiddleware.
+// Só é chamado por handlers atrás dele, então a asserção de tipo nunca
+// deveria falhar — um pânico aqui denuncia uma rota sem o middleware, não
+// uma entrada do usuário.
+func userIDFrom(c *gin.Context) uuid.UUID {
+	return c.MustGet(contextUserIDKey).(uuid.UUID)
 }

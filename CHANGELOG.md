@@ -59,6 +59,14 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   o ciclo de 5 minutos do resto do Guardião), com alerta por e-mail na
   transição para sessão caída. Remove o canal falso de log — encerra a
   Fase 4 (Canais reais).
+- `GET/POST /api/v1/areas` e `GET/POST /api/v1/labels`: início da Fase 5
+  (API e frontend). `AreaModel` ganha `color`, prometido desde a migration
+  `0003_areas.sql` para esta fase; Janela de Silêncio própria por Área fica
+  para quando existir lógica de override no domínio. Nomes duplicados por
+  usuário são rejeitados com 409 (`postgres.ErrDuplicateName`,
+  `UNIQUE(user_id, name)` — migrations `0010`/já existente em `labels` desde
+  a `0008`). `Update`/`Delete` ficam para um commit à parte: exigem decidir
+  a política de exclusão com Compromissos já associados.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

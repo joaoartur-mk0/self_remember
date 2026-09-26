@@ -131,6 +131,95 @@ const docTemplate = `{
                 }
             }
         },
+        "/commitments": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commitments"
+                ],
+                "summary": "Listar Compromissos",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Incluir Compromissos arquivados",
+                        "name": "include_archived",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/http.commitmentResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commitments"
+                ],
+                "summary": "Criar Compromisso",
+                "parameters": [
+                    {
+                        "description": "Compromisso a criar",
+                        "name": "commitment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createCommitmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/http.commitmentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Corpo inválido, Compromisso inválido, ou Área/Etiqueta não pertence ao usuário"
+                    }
+                }
+            }
+        },
+        "/commitments/{id}/archive": {
+            "post": {
+                "tags": [
+                    "commitments"
+                ],
+                "summary": "Arquivar Compromisso",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do Compromisso",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Compromisso não encontrado ou não pertence ao usuário"
+                    }
+                }
+            }
+        },
         "/labels": {
             "get": {
                 "produces": [
@@ -189,6 +278,183 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/occurrences/today": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "occurrences"
+                ],
+                "summary": "Ocorrências de hoje",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/http.occurrenceResponse"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário sem Ajustes gravados (fuso desconhecido) — mesma condição de GET /settings"
+                    }
+                }
+            }
+        },
+        "/occurrences/{id}/complete": {
+            "post": {
+                "tags": [
+                    "occurrences"
+                ],
+                "summary": "Reconhecer Conclusão",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID da Ocorrência",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Ocorrência não encontrada ou não pertence ao usuário"
+                    },
+                    "409": {
+                        "description": "Transição inválida a partir do estado atual"
+                    }
+                }
+            }
+        },
+        "/occurrences/{id}/dismiss": {
+            "post": {
+                "tags": [
+                    "occurrences"
+                ],
+                "summary": "Reconhecer Desistência",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID da Ocorrência",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Ocorrência não encontrada ou não pertence ao usuário"
+                    },
+                    "409": {
+                        "description": "Transição inválida a partir do estado atual"
+                    }
+                }
+            }
+        },
+        "/occurrences/{id}/snooze": {
+            "post": {
+                "tags": [
+                    "occurrences"
+                ],
+                "summary": "Reconhecer Adiamento",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID da Ocorrência",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novo vencimento",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.snoozeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Corpo inválido"
+                    },
+                    "404": {
+                        "description": "Ocorrência não encontrada ou não pertence ao usuário"
+                    },
+                    "409": {
+                        "description": "Transição inválida, ou novo vencimento não é depois do atual"
+                    }
+                }
+            }
+        },
+        "/settings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Ver Ajustes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.settingsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário sem Ajustes gravados"
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Gravar Ajustes",
+                "parameters": [
+                    {
+                        "description": "Fuso IANA e Janela de Silêncio",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.updateSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.settingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Corpo inválido, fuso desconhecido, ou horário malformado"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -206,6 +472,41 @@ const docTemplate = `{
                 }
             }
         },
+        "http.commitmentResponse": {
+            "type": "object",
+            "properties": {
+                "archived_at": {
+                    "type": "string"
+                },
+                "area_id": {
+                    "type": "string"
+                },
+                "carry_over_policy": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "label_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "nag_profile": {
+                    "type": "string"
+                },
+                "recurrence_rule": {
+                    "type": "string"
+                },
+                "recurrence_start": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "http.createAreaRequest": {
             "type": "object",
             "required": [
@@ -216,6 +517,42 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.createCommitmentRequest": {
+            "type": "object",
+            "required": [
+                "area_id",
+                "carry_over_policy",
+                "nag_profile",
+                "recurrence_start",
+                "title"
+            ],
+            "properties": {
+                "area_id": {
+                    "type": "string"
+                },
+                "carry_over_policy": {
+                    "type": "string"
+                },
+                "label_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "nag_profile": {
+                    "type": "string"
+                },
+                "recurrence_rule": {
+                    "type": "string"
+                },
+                "recurrence_start": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 }
             }
@@ -253,6 +590,68 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.occurrenceResponse": {
+            "type": "object",
+            "properties": {
+                "current_step": {
+                    "type": "integer"
+                },
+                "due_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.settingsResponse": {
+            "type": "object",
+            "properties": {
+                "quiet_hours_end": {
+                    "type": "string"
+                },
+                "quiet_hours_start": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.snoozeRequest": {
+            "type": "object",
+            "required": [
+                "due_at"
+            ],
+            "properties": {
+                "due_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.updateSettingsRequest": {
+            "type": "object",
+            "required": [
+                "timezone"
+            ],
+            "properties": {
+                "quiet_hours_end": {
+                    "type": "string"
+                },
+                "quiet_hours_start": {
+                    "type": "string"
+                },
+                "timezone": {
                     "type": "string"
                 }
             }

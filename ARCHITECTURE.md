@@ -254,5 +254,8 @@ Segredos por variáveis de ambiente a partir de um `.env` fora do versionamento;
 
 ## 10. Estado atual
 
-Nada foi implementado. O repositório tem `go.mod` e esta documentação. A ordem sugerida de
-construção está no [`README.md`](./README.md).
+Fundação, Domínio puro, Motor e Canais reais (Fases 1–4) estão prontos. A Fase 5 (API e
+frontend) cobre CRUD de Área/Etiqueta, Compromissos (Create/List/Archive — edição fica para
+quando existir regeneração de Ocorrências, ADR-0002), o ciclo de Ocorrência/Reconhecimento
+(Hoje, Complete/Dismiss/Snooze, com o log de auditoria `acks`) e Ajustes (fuso e Janela de
+Silêncio). O histórico detalhado de cada entrega está no [`CHANGELOG.md`](./CHANGELOG.md).

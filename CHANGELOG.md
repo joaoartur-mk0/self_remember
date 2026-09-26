@@ -67,6 +67,31 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   `UNIQUE(user_id, name)` — migrations `0010`/já existente em `labels` desde
   a `0008`). `Update`/`Delete` ficam para um commit à parte: exigem decidir
   a política de exclusão com Compromissos já associados.
+- Tabela `acks` (migration `0012`) e `AckRepository`: log de auditoria de
+  Reconhecimentos — quando e como o usuário reagiu a uma Ocorrência, "o dado
+  mais valioso do sistema" (CONTEXT.md). Só `INSERT`, nunca `UPDATE`/`DELETE`.
+- `AreaRepository.FindByIDForUser`: busca escopada por usuário, no padrão de
+  `ChannelRepository`, reintroduzida para o caso de uso de Compromisso validar
+  posse de Área.
+- Ajustes: `GET/PUT /api/v1/settings` sobre `user_settings` (migration `0001`,
+  sem migration nova). `PUT` valida fuso IANA (`time.LoadLocation`) antes de
+  gravar; Janela de Silêncio aceita `"HH:MM"` e é persistida como `TIME`.
+- Compromissos: `POST/GET /api/v1/commitments` e
+  `POST /api/v1/commitments/:id/archive`. `CreateUseCase` confirma posse de
+  Área e Etiquetas antes de persistir — posse recusada devolve 400, não 404,
+  para não vazar existência de recursos de outro usuário. Edição (`PUT`) fica
+  fora desta fase: depende de regenerar Ocorrências futuras (ADR-0002 ainda
+  não existe).
+- Ocorrências: `GET /api/v1/occurrences/today` (vencimento calculado no fuso
+  do usuário) e `POST /api/v1/occurrences/:id/{complete,dismiss,snooze}`.
+  `AckUseCase` aplica a transição de domínio, persiste, e grava um `Ack` de
+  auditoria (`source: "web"`). Transições inválidas (`*TransitionError`) e
+  Adiamento para um vencimento no passado (novo
+  `occurrence.ErrSnoozeMustBeAfterCurrent`) devolvem 409, não 500.
+- `cmd/admin create-user` exige `--timezone` (validado como IANA) e cria
+  `users`/`user_settings` na mesma transação — um usuário nunca existe sem
+  fuso, encerrando a lacuna que a Fase 5 (API mínima para o frontend existir)
+  precisava fechar.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

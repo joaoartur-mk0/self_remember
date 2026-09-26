@@ -9,6 +9,29 @@ definitions:
       name:
         type: string
     type: object
+  http.commitmentResponse:
+    properties:
+      archived_at:
+        type: string
+      area_id:
+        type: string
+      carry_over_policy:
+        type: string
+      id:
+        type: string
+      label_ids:
+        items:
+          type: string
+        type: array
+      nag_profile:
+        type: string
+      recurrence_rule:
+        type: string
+      recurrence_start:
+        type: string
+      title:
+        type: string
+    type: object
   http.createAreaRequest:
     properties:
       color:
@@ -17,6 +40,31 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  http.createCommitmentRequest:
+    properties:
+      area_id:
+        type: string
+      carry_over_policy:
+        type: string
+      label_ids:
+        items:
+          type: string
+        type: array
+      nag_profile:
+        type: string
+      recurrence_rule:
+        type: string
+      recurrence_start:
+        type: string
+      title:
+        type: string
+    required:
+    - area_id
+    - carry_over_policy
+    - nag_profile
+    - recurrence_start
+    - title
     type: object
   http.createLabelRequest:
     properties:
@@ -41,6 +89,46 @@ definitions:
     required:
     - email
     - password
+    type: object
+  http.occurrenceResponse:
+    properties:
+      current_step:
+        type: integer
+      due_at:
+        type: string
+      id:
+        type: string
+      state:
+        type: string
+      title:
+        type: string
+    type: object
+  http.settingsResponse:
+    properties:
+      quiet_hours_end:
+        type: string
+      quiet_hours_start:
+        type: string
+      timezone:
+        type: string
+    type: object
+  http.snoozeRequest:
+    properties:
+      due_at:
+        type: string
+    required:
+    - due_at
+    type: object
+  http.updateSettingsRequest:
+    properties:
+      quiet_hours_end:
+        type: string
+      quiet_hours_start:
+        type: string
+      timezone:
+        type: string
+    required:
+    - timezone
     type: object
 info:
   contact: {}
@@ -127,6 +215,64 @@ paths:
       summary: Refresh
       tags:
       - auth
+  /commitments:
+    get:
+      parameters:
+      - description: Incluir Compromissos arquivados
+        in: query
+        name: include_archived
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/http.commitmentResponse'
+            type: array
+      summary: Listar Compromissos
+      tags:
+      - commitments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Compromisso a criar
+        in: body
+        name: commitment
+        required: true
+        schema:
+          $ref: '#/definitions/http.createCommitmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.commitmentResponse'
+        "400":
+          description: Corpo inválido, Compromisso inválido, ou Área/Etiqueta não
+            pertence ao usuário
+      summary: Criar Compromisso
+      tags:
+      - commitments
+  /commitments/{id}/archive:
+    post:
+      parameters:
+      - description: ID do Compromisso
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Compromisso não encontrado ou não pertence ao usuário
+      summary: Arquivar Compromisso
+      tags:
+      - commitments
   /labels:
     get:
       produces:
@@ -165,4 +311,119 @@ paths:
       summary: Criar Etiqueta
       tags:
       - labels
+  /occurrences/{id}/complete:
+    post:
+      parameters:
+      - description: ID da Ocorrência
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Ocorrência não encontrada ou não pertence ao usuário
+        "409":
+          description: Transição inválida a partir do estado atual
+      summary: Reconhecer Conclusão
+      tags:
+      - occurrences
+  /occurrences/{id}/dismiss:
+    post:
+      parameters:
+      - description: ID da Ocorrência
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Ocorrência não encontrada ou não pertence ao usuário
+        "409":
+          description: Transição inválida a partir do estado atual
+      summary: Reconhecer Desistência
+      tags:
+      - occurrences
+  /occurrences/{id}/snooze:
+    post:
+      parameters:
+      - description: ID da Ocorrência
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Novo vencimento
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.snoozeRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Corpo inválido
+        "404":
+          description: Ocorrência não encontrada ou não pertence ao usuário
+        "409":
+          description: Transição inválida, ou novo vencimento não é depois do atual
+      summary: Reconhecer Adiamento
+      tags:
+      - occurrences
+  /occurrences/today:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/http.occurrenceResponse'
+            type: array
+        "404":
+          description: Usuário sem Ajustes gravados (fuso desconhecido) — mesma condição
+            de GET /settings
+      summary: Ocorrências de hoje
+      tags:
+      - occurrences
+  /settings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.settingsResponse'
+        "404":
+          description: Usuário sem Ajustes gravados
+      summary: Ver Ajustes
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Fuso IANA e Janela de Silêncio
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.settingsResponse'
+        "400":
+          description: Corpo inválido, fuso desconhecido, ou horário malformado
+      summary: Gravar Ajustes
+      tags:
+      - settings
 swagger: "2.0"

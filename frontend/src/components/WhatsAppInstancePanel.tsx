@@ -36,16 +36,17 @@ export function WhatsAppInstancePanel() {
   }
 
   useEffect(() => {
-    refreshStatus();
-
-    pollRef.current = setInterval(async () => {
+    async function tick() {
       const current = await refreshStatus();
       if (current !== "open") {
         await requestQRCode();
       } else {
         setQrCode(null);
       }
-    }, POLL_INTERVAL_MS);
+    }
+
+    tick();
+    pollRef.current = setInterval(tick, POLL_INTERVAL_MS);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

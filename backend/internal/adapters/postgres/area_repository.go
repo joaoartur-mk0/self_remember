@@ -50,3 +50,14 @@ func (r *AreaRepository) FindByUser(ctx context.Context, userID uuid.UUID) ([]Ar
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("name ASC").Find(&areas).Error
 	return areas, err
 }
+
+// FindByIDForUser busca uma Área pelo ID, restrito ao usuário informado —
+// isolamento por user_id (ADR-0001). Usada pelo caso de uso de Compromisso
+// para validar que a AreaID informada pertence a quem está criando.
+func (r *AreaRepository) FindByIDForUser(ctx context.Context, id, userID uuid.UUID) (*AreaModel, error) {
+	var m AreaModel
+	if err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&m).Error; err != nil {
+		return nil, err
+	}
+	return &m, nil
+}

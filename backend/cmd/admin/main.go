@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"self-remember/backend/internal/adapters/postgres"
 	"self-remember/backend/internal/domain/user"
@@ -20,7 +22,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "uso: admin <comando>\n\ncomandos disponíveis:\n  create-user --email --name")
+		fmt.Fprintln(os.Stderr, "uso: admin <comando>\n\ncomandos disponíveis:\n  create-user --email --name --timezone")
 		os.Exit(1)
 	}
 
@@ -40,12 +42,19 @@ func runCreateUser(args []string) error {
 	fs := flag.NewFlagSet("create-user", flag.ContinueOnError)
 	email := fs.String("email", "", "e-mail do novo usuário")
 	name := fs.String("name", "", "nome do novo usuário")
+	timezone := fs.String("timezone", "", "fuso IANA do novo usuário (ex.: America/Sao_Paulo)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	if *email == "" || *name == "" {
-		return fmt.Errorf("--email e --name são obrigatórios")
+	if *email == "" || *name == "" || *timezone == "" {
+		return fmt.Errorf("--email, --name e --timezone são obrigatórios")
+	}
+
+	// Um usuário nunca existe sem fuso: a expansão de recorrência e a Janela
+	// de Silêncio dependem dele (migration 0001).
+	if _, err := time.LoadLocation(*timezone); err != nil {
+		return fmt.Errorf("--timezone inválido: %w", err)
 	}
 
 	password, err := readPasswordFromStdin()
@@ -78,14 +87,30 @@ func runCreateUser(args []string) error {
 		return fmt.Errorf("inicializar gorm: %w", err)
 	}
 
-	users := postgres.NewUserRepository(gormDB)
-	if err := users.Create(context.Background(), &postgres.User{
-		ID:           uuid.New(),
-		Email:        *email,
-		PasswordHash: passwordHash,
-		Name:         *name,
-	}); err != nil {
-		return fmt.Errorf("criar usuário: %w", err)
+	userID := uuid.New()
+	err = gormDB.Transaction(func(tx *gorm.DB) error {
+		users := postgres.NewUserRepository(tx)
+		if err := users.Create(context.Background(), &postgres.User{
+			ID:           userID,
+			Email:        *email,
+			PasswordHash: passwordHash,
+			Name:         *name,
+		}); err != nil {
+			return fmt.Errorf("criar usuário: %w", err)
+		}
+
+		settings := postgres.NewUserSettingsRepository(tx)
+		if err := settings.Upsert(context.Background(), &postgres.UserSettingsModel{
+			UserID:   userID,
+			Timezone: *timezone,
+		}); err != nil {
+			return fmt.Errorf("gravar ajustes: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("usuário %s criado\n", *email)

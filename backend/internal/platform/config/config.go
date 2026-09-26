@@ -8,12 +8,18 @@ import (
 	"strconv"
 )
 
-// Config contém a configuração necessária para o processo cmd/api.
+// Config contém a configuração necessária para o processo cmd/api. Carrega
+// SMTP e Evolution também: desde que a API passou a expor
+// verificação de Canal e o painel de status da instância WhatsApp
+// (POST /channels/:id/verify/*, GET /whatsapp-instance/*), ela envia
+// mensagens pelos dois, não só o worker.
 type Config struct {
 	HTTPAddr    string
 	LogLevel    string
 	DatabaseURL string
 	JWTSecret   []byte
+	SMTP        SMTPConfig
+	Evolution   EvolutionConfig
 }
 
 // Load lê a configuração do ambiente, aplicando defaults apenas para valores
@@ -31,11 +37,23 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	smtpCfg, err := loadSMTP()
+	if err != nil {
+		return Config{}, err
+	}
+
+	evolutionCfg, err := loadEvolution()
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
 		HTTPAddr:    envOrDefault("SELF_REMEMBER_HTTP_ADDR", ":8080"),
 		LogLevel:    envOrDefault("SELF_REMEMBER_LOG_LEVEL", "info"),
 		DatabaseURL: databaseURL,
 		JWTSecret:   []byte(jwtSecret),
+		SMTP:        smtpCfg,
+		Evolution:   evolutionCfg,
 	}, nil
 }
 
@@ -81,66 +99,84 @@ func LoadWorker() (WorkerConfig, error) {
 		return WorkerConfig{}, err
 	}
 
-	smtpHost, err := RequireEnv("SELF_REMEMBER_SMTP_HOST")
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	smtpPortStr, err := RequireEnv("SELF_REMEMBER_SMTP_PORT")
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	smtpPort, err := strconv.Atoi(smtpPortStr)
-	if err != nil {
-		return WorkerConfig{}, fmt.Errorf("SELF_REMEMBER_SMTP_PORT inválido: %w", err)
-	}
-	smtpUsername, err := RequireEnv("SELF_REMEMBER_SMTP_USERNAME")
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	smtpPassword, err := RequireEnv("SELF_REMEMBER_SMTP_PASSWORD")
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	smtpFrom, err := RequireEnv("SELF_REMEMBER_SMTP_FROM")
+	smtpCfg, err := loadSMTP()
 	if err != nil {
 		return WorkerConfig{}, err
 	}
 
-	evolutionBaseURL, err := RequireEnv("SELF_REMEMBER_EVOLUTION_BASE_URL")
+	evolutionCfg, err := loadEvolution()
 	if err != nil {
 		return WorkerConfig{}, err
-	}
-	evolutionAPIKey, err := RequireEnv("SELF_REMEMBER_EVOLUTION_API_KEY")
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	evolutionInstance, err := RequireEnv("SELF_REMEMBER_EVOLUTION_INSTANCE")
-	if err != nil {
-		return WorkerConfig{}, err
-	}
-	maxPerMinuteStr := envOrDefault("SELF_REMEMBER_EVOLUTION_MAX_MESSAGES_PER_MINUTE", "20")
-	maxPerMinute, err := strconv.Atoi(maxPerMinuteStr)
-	if err != nil {
-		return WorkerConfig{}, fmt.Errorf("SELF_REMEMBER_EVOLUTION_MAX_MESSAGES_PER_MINUTE inválido: %w", err)
 	}
 
 	return WorkerConfig{
 		LogLevel:    envOrDefault("SELF_REMEMBER_LOG_LEVEL", "info"),
 		DatabaseURL: databaseURL,
-		SMTP: SMTPConfig{
-			Host:     smtpHost,
-			Port:     smtpPort,
-			Username: smtpUsername,
-			Password: smtpPassword,
-			From:     smtpFrom,
-		},
-		Evolution: EvolutionConfig{
-			BaseURL:              evolutionBaseURL,
-			APIKey:               evolutionAPIKey,
-			Instance:             evolutionInstance,
-			MaxMessagesPerMinute: maxPerMinute,
-		},
-		OpsEmail: envOrDefault("SELF_REMEMBER_OPS_EMAIL", ""),
+		SMTP:        smtpCfg,
+		Evolution:   evolutionCfg,
+		OpsEmail:    envOrDefault("SELF_REMEMBER_OPS_EMAIL", ""),
+	}, nil
+}
+
+// loadSMTP lê a credencial de instância do Canal de e-mail — compartilhada
+// entre cmd/api (verificação de Canal) e cmd/worker (Entrega e alerta de
+// EvolutionAPI desconectada).
+func loadSMTP() (SMTPConfig, error) {
+	host, err := RequireEnv("SELF_REMEMBER_SMTP_HOST")
+	if err != nil {
+		return SMTPConfig{}, err
+	}
+	portStr, err := RequireEnv("SELF_REMEMBER_SMTP_PORT")
+	if err != nil {
+		return SMTPConfig{}, err
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return SMTPConfig{}, fmt.Errorf("SELF_REMEMBER_SMTP_PORT inválido: %w", err)
+	}
+	username, err := RequireEnv("SELF_REMEMBER_SMTP_USERNAME")
+	if err != nil {
+		return SMTPConfig{}, err
+	}
+	password, err := RequireEnv("SELF_REMEMBER_SMTP_PASSWORD")
+	if err != nil {
+		return SMTPConfig{}, err
+	}
+	from, err := RequireEnv("SELF_REMEMBER_SMTP_FROM")
+	if err != nil {
+		return SMTPConfig{}, err
+	}
+
+	return SMTPConfig{Host: host, Port: port, Username: username, Password: password, From: from}, nil
+}
+
+// loadEvolution lê a credencial de instância do Canal de WhatsApp —
+// compartilhada entre cmd/api (verificação de Canal e painel de status da
+// instância) e cmd/worker (Entrega e health check, ADR-0005).
+func loadEvolution() (EvolutionConfig, error) {
+	baseURL, err := RequireEnv("SELF_REMEMBER_EVOLUTION_BASE_URL")
+	if err != nil {
+		return EvolutionConfig{}, err
+	}
+	apiKey, err := RequireEnv("SELF_REMEMBER_EVOLUTION_API_KEY")
+	if err != nil {
+		return EvolutionConfig{}, err
+	}
+	instance, err := RequireEnv("SELF_REMEMBER_EVOLUTION_INSTANCE")
+	if err != nil {
+		return EvolutionConfig{}, err
+	}
+	maxPerMinuteStr := envOrDefault("SELF_REMEMBER_EVOLUTION_MAX_MESSAGES_PER_MINUTE", "20")
+	maxPerMinute, err := strconv.Atoi(maxPerMinuteStr)
+	if err != nil {
+		return EvolutionConfig{}, fmt.Errorf("SELF_REMEMBER_EVOLUTION_MAX_MESSAGES_PER_MINUTE inválido: %w", err)
+	}
+
+	return EvolutionConfig{
+		BaseURL:              baseURL,
+		APIKey:               apiKey,
+		Instance:             instance,
+		MaxMessagesPerMinute: maxPerMinute,
 	}, nil
 }
 

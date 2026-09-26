@@ -15,6 +15,16 @@ const (
 	KindEmail    Kind = "email"
 )
 
+// Valid reporta se o valor é um dos dois Kinds suportados pelo sistema.
+func (k Kind) Valid() bool {
+	switch k {
+	case KindWhatsApp, KindEmail:
+		return true
+	default:
+		return false
+	}
+}
+
 // ProviderID é o identificador que o provedor externo atribui a um envio
 // (ex.: message ID da EvolutionAPI). Persistido em deliveries.provider_message_id.
 type ProviderID string

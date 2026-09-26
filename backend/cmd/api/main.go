@@ -9,11 +9,15 @@ import (
 	"syscall"
 	"time"
 
+	"self-remember/backend/internal/adapters/evolution"
 	httpadapter "self-remember/backend/internal/adapters/http"
 	"self-remember/backend/internal/adapters/postgres"
+	"self-remember/backend/internal/adapters/smtp"
 	"self-remember/backend/internal/app/auth"
+	channelapp "self-remember/backend/internal/app/channel"
 	commitmentapp "self-remember/backend/internal/app/commitment"
 	occurrenceapp "self-remember/backend/internal/app/occurrence"
+	"self-remember/backend/internal/domain/channel"
 	"self-remember/backend/internal/platform/config"
 	"self-remember/backend/internal/platform/database"
 	"self-remember/backend/internal/platform/logging"
@@ -68,6 +72,30 @@ func main() {
 	loginUseCase := auth.NewLoginUseCase(users, refreshTokens, tokens, time.Now)
 	refreshUseCase := auth.NewRefreshUseCase(refreshTokens, tokens, time.Now)
 
+	smtpChannel, err := smtp.New(smtp.Config{
+		Host:     cfg.SMTP.Host,
+		Port:     cfg.SMTP.Port,
+		Username: cfg.SMTP.Username,
+		Password: cfg.SMTP.Password,
+		From:     cfg.SMTP.From,
+	})
+	if err != nil {
+		logger.Error("failed to configure smtp channel", "error", err)
+		os.Exit(1)
+	}
+	evolutionChannel := evolution.New(evolution.Config{
+		BaseURL:              cfg.Evolution.BaseURL,
+		APIKey:               cfg.Evolution.APIKey,
+		Instance:             cfg.Evolution.Instance,
+		MaxMessagesPerMinute: cfg.Evolution.MaxMessagesPerMinute,
+	}, nil)
+
+	channels := postgres.NewChannelRepository(gormDB)
+	verifyChannel := channelapp.NewVerificationUseCase(channels, map[channel.Kind]channel.Channel{
+		channel.KindEmail:    smtpChannel,
+		channel.KindWhatsApp: evolutionChannel,
+	}, time.Now)
+
 	handlers := httpadapter.Handlers{
 		Auth:       httpadapter.NewAuthHandler(loginUseCase, refreshUseCase),
 		Area:       httpadapter.NewAreaHandler(areas),
@@ -75,6 +103,8 @@ func main() {
 		Settings:   httpadapter.NewSettingsHandler(settings),
 		Commitment: httpadapter.NewCommitmentHandler(createCommitment, commitments),
 		Occurrence: httpadapter.NewOccurrenceHandler(occurrences, settings, ackUseCase),
+		Channel:    httpadapter.NewChannelHandler(channels, verifyChannel),
+		Instance:   httpadapter.NewInstanceHandler(evolutionChannel),
 	}
 
 	router := httpadapter.NewRouter(handlers, tokens)

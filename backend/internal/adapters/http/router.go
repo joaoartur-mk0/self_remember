@@ -19,6 +19,8 @@ type Handlers struct {
 	Settings   *SettingsHandler
 	Commitment *CommitmentHandler
 	Occurrence *OccurrenceHandler
+	Channel    *ChannelHandler
+	Instance   *InstanceHandler
 }
 
 // NewRouter monta as rotas do cmd/api: health check e swagger públicos,
@@ -65,6 +67,15 @@ func NewRouter(h Handlers, tokens *auth.TokenIssuer) *gin.Engine {
 	protected.POST("/occurrences/:id/complete", h.Occurrence.Complete)
 	protected.POST("/occurrences/:id/dismiss", h.Occurrence.Dismiss)
 	protected.POST("/occurrences/:id/snooze", h.Occurrence.Snooze)
+
+	protected.POST("/channels", h.Channel.Create)
+	protected.GET("/channels", h.Channel.List)
+	protected.DELETE("/channels/:id", h.Channel.Delete)
+	protected.POST("/channels/:id/verify/request", h.Channel.RequestVerification)
+	protected.POST("/channels/:id/verify/confirm", h.Channel.ConfirmVerification)
+
+	protected.GET("/whatsapp-instance/status", h.Instance.Status)
+	protected.GET("/whatsapp-instance/qrcode", h.Instance.QRCode)
 
 	return router
 }

@@ -9,6 +9,19 @@ definitions:
       name:
         type: string
     type: object
+  http.channelResponse:
+    properties:
+      address:
+        type: string
+      fallback_order:
+        type: integer
+      id:
+        type: string
+      kind:
+        type: string
+      verified:
+        type: boolean
+    type: object
   http.commitmentResponse:
     properties:
       archived_at:
@@ -32,6 +45,13 @@ definitions:
       title:
         type: string
     type: object
+  http.confirmVerificationRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
   http.createAreaRequest:
     properties:
       color:
@@ -40,6 +60,16 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  http.createChannelRequest:
+    properties:
+      address:
+        type: string
+      kind:
+        type: string
+    required:
+    - address
+    - kind
     type: object
   http.createCommitmentRequest:
     properties:
@@ -73,6 +103,21 @@ definitions:
     required:
     - name
     type: object
+  http.instanceQRCodeResponse:
+    properties:
+      qrcode:
+        description: |-
+          QRCode é uma data URI ("data:image/png;base64,...") pronta para um
+          <img src>, ou vazia se a EvolutionAPI não tiver um QR novo para
+          devolver agora (ex.: já conectada, ou pareamento anterior ainda
+          válido) — o cliente decide o que mostrar consultando Status junto.
+        type: string
+    type: object
+  http.instanceStatusResponse:
+    properties:
+      state:
+        type: string
+    type: object
   http.labelResponse:
     properties:
       id:
@@ -105,6 +150,10 @@ definitions:
     type: object
   http.settingsResponse:
     properties:
+      default_carry_over_policy:
+        type: string
+      default_nag_profile:
+        type: string
       quiet_hours_end:
         type: string
       quiet_hours_start:
@@ -121,6 +170,10 @@ definitions:
     type: object
   http.updateSettingsRequest:
     properties:
+      default_carry_over_policy:
+        type: string
+      default_nag_profile:
+        type: string
       quiet_hours_end:
         type: string
       quiet_hours_start:
@@ -128,6 +181,8 @@ definitions:
       timezone:
         type: string
     required:
+    - default_carry_over_policy
+    - default_nag_profile
     - timezone
     type: object
 info:
@@ -215,6 +270,102 @@ paths:
       summary: Refresh
       tags:
       - auth
+  /channels:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/http.channelResponse'
+            type: array
+      summary: Listar Canais
+      tags:
+      - channels
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tipo (whatsapp|email) e endereço
+        in: body
+        name: channel
+        required: true
+        schema:
+          $ref: '#/definitions/http.createChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.channelResponse'
+        "400":
+          description: Corpo inválido ou tipo de Canal desconhecido
+      summary: Criar Canal
+      tags:
+      - channels
+  /channels/{id}:
+    delete:
+      parameters:
+      - description: ID do Canal
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Canal não encontrado ou não pertence ao usuário
+      summary: Remover Canal
+      tags:
+      - channels
+  /channels/{id}/verify/confirm:
+    post:
+      parameters:
+      - description: ID do Canal
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Código recebido
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.confirmVerificationRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Corpo inválido
+        "404":
+          description: Canal não encontrado ou não pertence ao usuário
+        "409":
+          description: Nenhum código solicitado, código expirado, ou código incorreto
+      summary: Confirmar código de verificação do Canal
+      tags:
+      - channels
+  /channels/{id}/verify/request:
+    post:
+      parameters:
+      - description: ID do Canal
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Canal não encontrado ou não pertence ao usuário
+        "502":
+          description: Falha ao enviar o código pelo próprio Canal
+      summary: Solicitar código de verificação do Canal
+      tags:
+      - channels
   /commitments:
     get:
       parameters:
@@ -408,7 +559,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Fuso IANA e Janela de Silêncio
+      - description: Fuso IANA, Janela de Silêncio e Preferências padrão
         in: body
         name: settings
         required: true
@@ -422,8 +573,37 @@ paths:
           schema:
             $ref: '#/definitions/http.settingsResponse'
         "400":
-          description: Corpo inválido, fuso desconhecido, ou horário malformado
+          description: Corpo inválido, fuso desconhecido, horário malformado, ou Perfil/Política
+            inválidos
       summary: Gravar Ajustes
       tags:
       - settings
+  /whatsapp-instance/qrcode:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.instanceQRCodeResponse'
+        "502":
+          description: EvolutionAPI inacessível
+      summary: Solicitar QR code de pareamento da instância WhatsApp
+      tags:
+      - whatsapp-instance
+  /whatsapp-instance/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.instanceStatusResponse'
+        "502":
+          description: EvolutionAPI inacessível
+      summary: Estado da instância WhatsApp
+      tags:
+      - whatsapp-instance
 swagger: "2.0"

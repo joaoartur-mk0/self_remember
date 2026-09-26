@@ -131,6 +131,155 @@ const docTemplate = `{
                 }
             }
         },
+        "/channels": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Listar Canais",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/http.channelResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Criar Canal",
+                "parameters": [
+                    {
+                        "description": "Tipo (whatsapp|email) e endereço",
+                        "name": "channel",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/http.channelResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Corpo inválido ou tipo de Canal desconhecido"
+                    }
+                }
+            }
+        },
+        "/channels/{id}": {
+            "delete": {
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Remover Canal",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do Canal",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Canal não encontrado ou não pertence ao usuário"
+                    }
+                }
+            }
+        },
+        "/channels/{id}/verify/confirm": {
+            "post": {
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Confirmar código de verificação do Canal",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do Canal",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Código recebido",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.confirmVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Corpo inválido"
+                    },
+                    "404": {
+                        "description": "Canal não encontrado ou não pertence ao usuário"
+                    },
+                    "409": {
+                        "description": "Nenhum código solicitado, código expirado, ou código incorreto"
+                    }
+                }
+            }
+        },
+        "/channels/{id}/verify/request": {
+            "post": {
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Solicitar código de verificação do Canal",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do Canal",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Canal não encontrado ou não pertence ao usuário"
+                    },
+                    "502": {
+                        "description": "Falha ao enviar o código pelo próprio Canal"
+                    }
+                }
+            }
+        },
         "/commitments": {
             "get": {
                 "produces": [
@@ -434,7 +583,7 @@ const docTemplate = `{
                 "summary": "Gravar Ajustes",
                 "parameters": [
                     {
-                        "description": "Fuso IANA e Janela de Silêncio",
+                        "description": "Fuso IANA, Janela de Silêncio e Preferências padrão",
                         "name": "settings",
                         "in": "body",
                         "required": true,
@@ -451,7 +600,51 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Corpo inválido, fuso desconhecido, ou horário malformado"
+                        "description": "Corpo inválido, fuso desconhecido, horário malformado, ou Perfil/Política inválidos"
+                    }
+                }
+            }
+        },
+        "/whatsapp-instance/qrcode": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp-instance"
+                ],
+                "summary": "Solicitar QR code de pareamento da instância WhatsApp",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.instanceQRCodeResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "EvolutionAPI inacessível"
+                    }
+                }
+            }
+        },
+        "/whatsapp-instance/status": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "whatsapp-instance"
+                ],
+                "summary": "Estado da instância WhatsApp",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.instanceStatusResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "EvolutionAPI inacessível"
                     }
                 }
             }
@@ -469,6 +662,26 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "http.channelResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "fallback_order": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "verified": {
+                    "type": "boolean"
                 }
             }
         },
@@ -507,6 +720,17 @@ const docTemplate = `{
                 }
             }
         },
+        "http.confirmVerificationRequest": {
+            "type": "object",
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                }
+            }
+        },
         "http.createAreaRequest": {
             "type": "object",
             "required": [
@@ -517,6 +741,21 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.createChannelRequest": {
+            "type": "object",
+            "required": [
+                "address",
+                "kind"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "kind": {
                     "type": "string"
                 }
             }
@@ -564,6 +803,23 @@ const docTemplate = `{
             ],
             "properties": {
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.instanceQRCodeResponse": {
+            "type": "object",
+            "properties": {
+                "qrcode": {
+                    "description": "QRCode é uma data URI (\"data:image/png;base64,...\") pronta para um\n\u003cimg src\u003e, ou vazia se a EvolutionAPI não tiver um QR novo para\ndevolver agora (ex.: já conectada, ou pareamento anterior ainda\nválido) — o cliente decide o que mostrar consultando Status junto.",
+                    "type": "string"
+                }
+            }
+        },
+        "http.instanceStatusResponse": {
+            "type": "object",
+            "properties": {
+                "state": {
                     "type": "string"
                 }
             }
@@ -617,6 +873,12 @@ const docTemplate = `{
         "http.settingsResponse": {
             "type": "object",
             "properties": {
+                "default_carry_over_policy": {
+                    "type": "string"
+                },
+                "default_nag_profile": {
+                    "type": "string"
+                },
                 "quiet_hours_end": {
                     "type": "string"
                 },
@@ -642,9 +904,17 @@ const docTemplate = `{
         "http.updateSettingsRequest": {
             "type": "object",
             "required": [
+                "default_carry_over_policy",
+                "default_nag_profile",
                 "timezone"
             ],
             "properties": {
+                "default_carry_over_policy": {
+                    "type": "string"
+                },
+                "default_nag_profile": {
+                    "type": "string"
+                },
                 "quiet_hours_end": {
                     "type": "string"
                 },

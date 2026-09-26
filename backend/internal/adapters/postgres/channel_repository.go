@@ -52,6 +52,22 @@ func (r *ChannelRepository) FindByUser(ctx context.Context, userID uuid.UUID) ([
 	return channels, err
 }
 
+// CountByUser conta os Canais de um usuário — usado para calcular o próximo
+// fallback_order ao criar um Canal (sempre ao fim da cadeia; reordenar fica
+// para quando existir uma tela que precise disso).
+func (r *ChannelRepository) CountByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&ChannelModel{}).Where("user_id = ?", userID).Count(&count).Error
+	return count, err
+}
+
+// Delete remove um Canal. Não é escopado por usuário — quem chama precisa
+// confirmar posse antes (ex.: via FindByIDForUser), como já é o padrão de
+// CommitmentRepository.Archive.
+func (r *ChannelRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&ChannelModel{}, "id = ?", id).Error
+}
+
 // FindByIDForUser busca um Canal pelo ID, restrito ao usuário informado —
 // isolamento por user_id (ADR-0001).
 func (r *ChannelRepository) FindByIDForUser(ctx context.Context, id, userID uuid.UUID) (*ChannelModel, error) {

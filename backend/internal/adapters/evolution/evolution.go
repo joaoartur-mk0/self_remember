@@ -119,35 +119,82 @@ type connectionStateResponse struct {
 	} `json:"instance"`
 }
 
-// HealthCheck reporta erro se a sessão WhatsApp não estiver com state=open
-// (ADR-0005: "Health check da instância Evolution a cada minuto. Sessão
-// desconectada é um incidente que dispara alerta pelo canal de e-mail").
-func (c *Channel) HealthCheck(ctx context.Context) error {
+// ConnectionState consulta o estado da sessão da única instância WhatsApp
+// desta instalação (ADR-0001: instância, não por usuário) — "open",
+// "connecting" ou "close". Usado tanto pelo HealthCheck quanto pelo painel
+// de status exposto na API para qualquer usuário logado.
+func (c *Channel) ConnectionState(ctx context.Context) (string, error) {
 	url := fmt.Sprintf("%s/instance/connectionState/%s", c.cfg.BaseURL, c.cfg.Instance)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return fmt.Errorf("criar requisição: %w", err)
+		return "", fmt.Errorf("criar requisição: %w", err)
 	}
 	req.Header.Set("apikey", c.cfg.APIKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("consultar estado da conexão: %w", err)
+		return "", fmt.Errorf("consultar estado da conexão: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("evolutionapi respondeu %d ao consultar estado da conexão", resp.StatusCode)
+		return "", fmt.Errorf("evolutionapi respondeu %d ao consultar estado da conexão", resp.StatusCode)
 	}
 
 	var result connectionStateResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("decodificar estado da conexão: %w", err)
+		return "", fmt.Errorf("decodificar estado da conexão: %w", err)
 	}
-	if result.Instance.State != "open" {
-		return fmt.Errorf("sessão do WhatsApp desconectada (state=%s)", result.Instance.State)
+	return result.Instance.State, nil
+}
+
+// HealthCheck reporta erro se a sessão WhatsApp não estiver com state=open
+// (ADR-0005: "Health check da instância Evolution a cada minuto. Sessão
+// desconectada é um incidente que dispara alerta pelo canal de e-mail").
+func (c *Channel) HealthCheck(ctx context.Context) error {
+	state, err := c.ConnectionState(ctx)
+	if err != nil {
+		return err
+	}
+	if state != "open" {
+		return fmt.Errorf("sessão do WhatsApp desconectada (state=%s)", state)
 	}
 	return nil
+}
+
+type connectResponse struct {
+	// Base64 é a QR code como data URI ("data:image/png;base64,...") — vazio
+	// quando a instância já está conectada ou aguardando um pareamento
+	// anterior ainda válido; o chamador decide o que fazer com esse caso
+	// consultando ConnectionState.
+	Base64 string `json:"base64"`
+}
+
+// Connect inicia (ou retoma) o pareamento da única instância WhatsApp desta
+// instalação e devolve o QR code a exibir, se houver um novo disponível.
+func (c *Channel) Connect(ctx context.Context) (qrCodeBase64 string, err error) {
+	url := fmt.Sprintf("%s/instance/connect/%s", c.cfg.BaseURL, c.cfg.Instance)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("criar requisição: %w", err)
+	}
+	req.Header.Set("apikey", c.cfg.APIKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("solicitar pareamento: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("evolutionapi respondeu %d ao solicitar pareamento", resp.StatusCode)
+	}
+
+	var result connectResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decodificar resposta de pareamento: %w", err)
+	}
+	return result.Base64, nil
 }
 
 func (c *Channel) SupportsInboundAck() bool {

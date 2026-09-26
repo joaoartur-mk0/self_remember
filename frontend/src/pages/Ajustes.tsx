@@ -5,18 +5,10 @@ import type { Settings } from "../lib/types";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm";
 
-// Lista curta e comum de fusos IANA — um seletor exaustivo (Intl.supportedValuesOf)
-// existe, mas cobrir a lista inteira é trabalho de UI própria, fora deste corte.
-const TIMEZONES = [
-  "America/Sao_Paulo",
-  "America/Manaus",
-  "America/Noronha",
-  "America/New_York",
-  "America/Los_Angeles",
-  "Europe/Lisbon",
-  "Europe/London",
-  "UTC",
-];
+// Lista completa de fusos IANA que o runtime conhece — evita que o fuso
+// gravado no backend (ex.: via cmd/admin create-user) não tenha <option>
+// correspondente e o <select> caia num valor diferente do gravado.
+const TIMEZONES = Intl.supportedValuesOf("timeZone");
 
 export function Ajustes() {
   const [timezone, setTimezone] = useState("America/Sao_Paulo");
@@ -36,8 +28,9 @@ export function Ajustes() {
       })
       .catch((err) => {
         // 404: usuário ainda sem Ajustes gravados — segue com os padrões do
-        // formulário em vez de bloquear a tela.
-        if (!(err instanceof ApiError && err.status === 404)) throw err;
+        // formulário em vez de bloquear a tela. Qualquer outro erro só é
+        // registrado: não há mais nada a fazer no load da tela.
+        if (!(err instanceof ApiError && err.status === 404)) console.error(err);
       });
   }, []);
 
@@ -45,6 +38,12 @@ export function Ajustes() {
     e.preventDefault();
     setError(null);
     setSaved(false);
+
+    if (Boolean(quietStart) !== Boolean(quietEnd)) {
+      setError("Informe os dois horários da Janela de Silêncio, ou deixe os dois em branco.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.put("/settings", {
@@ -66,8 +65,15 @@ export function Ajustes() {
 
       <form onSubmit={handleSubmit} className="max-w-sm space-y-4 rounded-lg border border-slate-200 bg-white p-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700">Fuso horário</label>
-          <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className={inputClass}>
+          <label htmlFor="timezone" className="block text-sm font-medium text-slate-700">
+            Fuso horário
+          </label>
+          <select
+            id="timezone"
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            className={inputClass}
+          >
             {TIMEZONES.map((tz) => (
               <option key={tz} value={tz}>
                 {tz}
@@ -77,16 +83,24 @@ export function Ajustes() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">Janela de Silêncio</label>
+          <span className="block text-sm font-medium text-slate-700">Janela de Silêncio</span>
           <div className="flex items-center gap-2">
+            <label htmlFor="quiet-start" className="sr-only">
+              Início da Janela de Silêncio
+            </label>
             <input
+              id="quiet-start"
               type="time"
               value={quietStart}
               onChange={(e) => setQuietStart(e.target.value)}
               className={inputClass}
             />
             <span className="text-slate-500">até</span>
+            <label htmlFor="quiet-end" className="sr-only">
+              Fim da Janela de Silêncio
+            </label>
             <input
+              id="quiet-end"
               type="time"
               value={quietEnd}
               onChange={(e) => setQuietEnd(e.target.value)}

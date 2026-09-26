@@ -25,9 +25,9 @@ export function Compromissos() {
   }
 
   useEffect(() => {
-    reloadCommitments();
-    api.get<Area[]>("/areas").then(setAreas);
-    api.get<Label[]>("/labels").then(setLabels);
+    reloadCommitments().catch(console.error);
+    api.get<Area[]>("/areas").then(setAreas).catch(console.error);
+    api.get<Label[]>("/labels").then(setLabels).catch(console.error);
   }, []);
 
   function toggleLabel(id: string) {
@@ -71,13 +71,29 @@ export function Compromissos() {
 
       <form onSubmit={handleSubmit} className="mb-8 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700">Título</label>
-          <input required value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+          <label htmlFor="title" className="block text-sm font-medium text-slate-700">
+            Título
+          </label>
+          <input
+            id="title"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={inputClass}
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">Área</label>
-          <select required value={areaID} onChange={(e) => setAreaID(e.target.value)} className={inputClass}>
+          <label htmlFor="area" className="block text-sm font-medium text-slate-700">
+            Área
+          </label>
+          <select
+            id="area"
+            required
+            value={areaID}
+            onChange={(e) => setAreaID(e.target.value)}
+            className={inputClass}
+          >
             <option value="" disabled>
               Selecione
             </option>
@@ -90,8 +106,11 @@ export function Compromissos() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">Vencimento inicial</label>
+          <label htmlFor="recurrence-start" className="block text-sm font-medium text-slate-700">
+            Vencimento inicial
+          </label>
           <input
+            id="recurrence-start"
             required
             type="datetime-local"
             value={recurrenceStart}
@@ -101,10 +120,11 @@ export function Compromissos() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">
+          <label htmlFor="recurrence-rule" className="block text-sm font-medium text-slate-700">
             Regra de recorrência (RRULE, opcional)
           </label>
           <input
+            id="recurrence-rule"
             value={recurrenceRule}
             onChange={(e) => setRecurrenceRule(e.target.value)}
             placeholder="FREQ=WEEKLY;BYDAY=MO"
@@ -114,16 +134,26 @@ export function Compromissos() {
 
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-slate-700">Perfil de Insistência</label>
-            <select value={nagProfile} onChange={(e) => setNagProfile(e.target.value)} className={inputClass}>
+            <label htmlFor="nag-profile" className="block text-sm font-medium text-slate-700">
+              Perfil de Insistência
+            </label>
+            <select
+              id="nag-profile"
+              value={nagProfile}
+              onChange={(e) => setNagProfile(e.target.value)}
+              className={inputClass}
+            >
               <option value="leve">Leve</option>
               <option value="normal">Normal</option>
               <option value="implacavel">Implacável</option>
             </select>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-slate-700">Política de Acúmulo</label>
+            <label htmlFor="carry-over-policy" className="block text-sm font-medium text-slate-700">
+              Política de Acúmulo
+            </label>
             <select
+              id="carry-over-policy"
               value={carryOverPolicy}
               onChange={(e) => setCarryOverPolicy(e.target.value)}
               className={inputClass}
@@ -136,7 +166,7 @@ export function Compromissos() {
 
         {labels.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-slate-700">Etiquetas</label>
+            <span className="block text-sm font-medium text-slate-700">Etiquetas</span>
             <div className="flex flex-wrap gap-2">
               {labels.map((l) => (
                 <button

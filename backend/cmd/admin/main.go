@@ -15,6 +15,7 @@ import (
 	"gorm.io/gorm"
 
 	"self-remember/backend/internal/adapters/postgres"
+	"self-remember/backend/internal/domain/commitment"
 	"self-remember/backend/internal/domain/user"
 	"self-remember/backend/internal/platform/config"
 	"self-remember/backend/internal/platform/database"
@@ -103,6 +104,11 @@ func runCreateUser(args []string) error {
 		if err := settings.Upsert(context.Background(), &postgres.UserSettingsModel{
 			UserID:   userID,
 			Timezone: *timezone,
+			// Mesmos valores do DEFAULT da migration 0013 — Upsert grava a
+			// coluna explicitamente, então um zero-value aqui sobrescreveria
+			// o default do banco com string vazia.
+			DefaultNagProfile:      string(commitment.NagProfileNormal),
+			DefaultCarryOverPolicy: string(commitment.CarryOverStack),
 		}); err != nil {
 			return fmt.Errorf("gravar ajustes: %w", err)
 		}

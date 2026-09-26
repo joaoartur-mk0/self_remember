@@ -9,15 +9,16 @@ import (
 	"gorm.io/gorm"
 
 	"self-remember/backend/internal/adapters/postgres"
+	"self-remember/backend/internal/domain/commitment"
 )
 
 // quietHoursLayout é o formato aceito e devolvido para horário de parede,
 // sem segundos: o que o formulário de Ajustes (ARCHITECTURE.md §6) pede.
 const quietHoursLayout = "15:04"
 
-// SettingsHandler expõe os Ajustes do usuário: fuso IANA e Janela de
-// Silêncio (user_settings, migration 0001) — sem seção de Canais, fora de
-// escopo desta fase.
+// SettingsHandler expõe os Ajustes do usuário: fuso IANA, Janela de
+// Silêncio e Preferências padrão de Compromisso (user_settings, migrations
+// 0001/0013) — sem seção de Canais, exposta por ChannelHandler.
 type SettingsHandler struct {
 	settings *postgres.UserSettingsRepository
 }
@@ -27,16 +28,20 @@ func NewSettingsHandler(settings *postgres.UserSettingsRepository) *SettingsHand
 }
 
 type settingsResponse struct {
-	Timezone        string  `json:"timezone"`
-	QuietHoursStart *string `json:"quiet_hours_start,omitempty"`
-	QuietHoursEnd   *string `json:"quiet_hours_end,omitempty"`
+	Timezone               string  `json:"timezone"`
+	QuietHoursStart        *string `json:"quiet_hours_start,omitempty"`
+	QuietHoursEnd          *string `json:"quiet_hours_end,omitempty"`
+	DefaultNagProfile      string  `json:"default_nag_profile"`
+	DefaultCarryOverPolicy string  `json:"default_carry_over_policy"`
 }
 
 func toSettingsResponse(m postgres.UserSettingsModel) settingsResponse {
 	return settingsResponse{
-		Timezone:        m.Timezone,
-		QuietHoursStart: reformatQuietHours(m.QuietHoursStart),
-		QuietHoursEnd:   reformatQuietHours(m.QuietHoursEnd),
+		Timezone:               m.Timezone,
+		QuietHoursStart:        reformatQuietHours(m.QuietHoursStart),
+		QuietHoursEnd:          reformatQuietHours(m.QuietHoursEnd),
+		DefaultNagProfile:      m.DefaultNagProfile,
+		DefaultCarryOverPolicy: m.DefaultCarryOverPolicy,
 	}
 }
 
@@ -76,9 +81,11 @@ func (h *SettingsHandler) Get(c *gin.Context) {
 }
 
 type updateSettingsRequest struct {
-	Timezone        string  `json:"timezone" binding:"required"`
-	QuietHoursStart *string `json:"quiet_hours_start"`
-	QuietHoursEnd   *string `json:"quiet_hours_end"`
+	Timezone               string  `json:"timezone" binding:"required"`
+	QuietHoursStart        *string `json:"quiet_hours_start"`
+	QuietHoursEnd          *string `json:"quiet_hours_end"`
+	DefaultNagProfile      string  `json:"default_nag_profile" binding:"required"`
+	DefaultCarryOverPolicy string  `json:"default_carry_over_policy" binding:"required"`
 }
 
 // Update godoc
@@ -86,9 +93,9 @@ type updateSettingsRequest struct {
 // @Tags         settings
 // @Accept       json
 // @Produce      json
-// @Param        settings  body  updateSettingsRequest  true  "Fuso IANA e Janela de Silêncio"
+// @Param        settings  body  updateSettingsRequest  true  "Fuso IANA, Janela de Silêncio e Preferências padrão"
 // @Success      200  {object}  settingsResponse
-// @Failure      400  "Corpo inválido, fuso desconhecido, ou horário malformado"
+// @Failure      400  "Corpo inválido, fuso desconhecido, horário malformado, ou Perfil/Política inválidos"
 // @Router       /settings [put]
 func (h *SettingsHandler) Update(c *gin.Context) {
 	var req updateSettingsRequest
@@ -98,6 +105,11 @@ func (h *SettingsHandler) Update(c *gin.Context) {
 	}
 
 	if _, err := time.LoadLocation(req.Timezone); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if !commitment.NagProfile(req.DefaultNagProfile).Valid() || !commitment.CarryOverPolicy(req.DefaultCarryOverPolicy).Valid() {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -119,10 +131,12 @@ func (h *SettingsHandler) Update(c *gin.Context) {
 	}
 
 	m := &postgres.UserSettingsModel{
-		UserID:          userIDFrom(c),
-		Timezone:        req.Timezone,
-		QuietHoursStart: start,
-		QuietHoursEnd:   end,
+		UserID:                 userIDFrom(c),
+		Timezone:               req.Timezone,
+		QuietHoursStart:        start,
+		QuietHoursEnd:          end,
+		DefaultNagProfile:      req.DefaultNagProfile,
+		DefaultCarryOverPolicy: req.DefaultCarryOverPolicy,
 	}
 	if err := h.settings.Upsert(c.Request.Context(), m); err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)

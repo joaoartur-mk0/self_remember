@@ -18,8 +18,13 @@ type UserSettingsModel struct {
 	Timezone        string    `gorm:"column:timezone"`
 	QuietHoursStart *string   `gorm:"column:quiet_hours_start"`
 	QuietHoursEnd   *string   `gorm:"column:quiet_hours_end"`
-	CreatedAt       time.Time `gorm:"column:created_at"`
-	UpdatedAt       time.Time `gorm:"column:updated_at"`
+	// DefaultNagProfile/DefaultCarryOverPolicy pré-selecionam o formulário de
+	// criação de Compromisso (migration 0013) — não têm efeito em Compromissos
+	// já criados, que gravam os seus próprios valores.
+	DefaultNagProfile      string    `gorm:"column:default_nag_profile"`
+	DefaultCarryOverPolicy string    `gorm:"column:default_carry_over_policy"`
+	CreatedAt              time.Time `gorm:"column:created_at"`
+	UpdatedAt              time.Time `gorm:"column:updated_at"`
 }
 
 func (UserSettingsModel) TableName() string {
@@ -36,9 +41,9 @@ func NewUserSettingsRepository(db *gorm.DB) *UserSettingsRepository {
 }
 
 // FindByUser busca os Ajustes de um usuário. Retorna gorm.ErrRecordNotFound
-// se o usuário não tiver linha em user_settings — hoje isso é possível
-// porque cmd/admin ainda não grava essa linha na criação (fica para A6); o
-// chamador decide o que fazer, não este repositório.
+// se o usuário não tiver linha em user_settings — hoje isso só acontece para
+// usuários criados antes de cmd/admin passar a gravar essa linha na criação
+// (migration 0001 + A6); o chamador decide o que fazer, não este repositório.
 func (r *UserSettingsRepository) FindByUser(ctx context.Context, userID uuid.UUID) (*UserSettingsModel, error) {
 	var m UserSettingsModel
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&m).Error; err != nil {
@@ -54,7 +59,8 @@ func (r *UserSettingsRepository) Upsert(ctx context.Context, m *UserSettingsMode
 		Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "user_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{
-				"timezone", "quiet_hours_start", "quiet_hours_end", "updated_at",
+				"timezone", "quiet_hours_start", "quiet_hours_end",
+				"default_nag_profile", "default_carry_over_policy", "updated_at",
 			}),
 		}).
 		Create(m).Error

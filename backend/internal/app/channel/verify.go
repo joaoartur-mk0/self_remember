@@ -29,6 +29,10 @@ var (
 	ErrNoCodeRequested = errors.New("nenhum código de verificação foi solicitado")
 	ErrCodeExpired     = errors.New("código de verificação expirado")
 	ErrInvalidCode     = errors.New("código de verificação inválido")
+	// ErrSendFailed cobre uma falha do provedor externo (SMTP/EvolutionAPI)
+	// ao enviar o código — distinto de uma falha de persistência interna,
+	// para o handler HTTP devolver 502 só neste caso, não 500.
+	ErrSendFailed = errors.New("falha ao enviar o código de verificação")
 )
 
 // verificationCodeTTL é quanto tempo um código de verificação vale — curto
@@ -74,12 +78,17 @@ func (uc *VerificationUseCase) Request(ctx context.Context, channelID, userID uu
 		return err
 	}
 
-	_, err = sender.Send(ctx, domainchannel.Message{
+	if _, err := sender.Send(ctx, domainchannel.Message{
 		To:            ch.Address,
 		Body:          fmt.Sprintf("Seu código de verificação do Self Remember é %s. Ele expira em 15 minutos.", code),
 		CorrelationID: ch.ID.String(),
-	})
-	return err
+	}); err != nil {
+		// Distinto de um erro de persistência (acima): aqui o problema é do
+		// provedor externo (SMTP/EvolutionAPI fora do ar), não do banco —
+		// o handler HTTP mapeia isso para 502, não 500.
+		return fmt.Errorf("%w: %w", ErrSendFailed, err)
+	}
+	return nil
 }
 
 // Confirm compara o código informado com o hash gravado por Request, em

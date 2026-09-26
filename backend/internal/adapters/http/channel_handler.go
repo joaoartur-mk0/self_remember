@@ -158,17 +158,18 @@ func (h *ChannelHandler) RequestVerification(c *gin.Context) {
 	}
 
 	if err := h.verify.Request(c.Request.Context(), id, userIDFrom(c)); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
 			c.AbortWithStatus(http.StatusNotFound)
-			return
-		}
-		if errors.Is(err, channelapp.ErrUnsupportedKind) {
+		case errors.Is(err, channelapp.ErrUnsupportedKind):
 			c.AbortWithStatus(http.StatusBadRequest)
-			return
+		case errors.Is(err, channelapp.ErrSendFailed):
+			// O problema é do provedor externo (SMTP/EvolutionAPI fora do
+			// ar), não do pedido do usuário nem do nosso banco.
+			c.AbortWithStatus(http.StatusBadGateway)
+		default:
+			c.AbortWithStatus(http.StatusInternalServerError)
 		}
-		// Falha ao enviar (SMTP fora do ar, EvolutionAPI desconectada): o
-		// problema é do provedor externo, não do pedido do usuário.
-		c.AbortWithStatus(http.StatusBadGateway)
 		return
 	}
 

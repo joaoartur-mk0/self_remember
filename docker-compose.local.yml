@@ -70,6 +70,11 @@ services:
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: postgresql
       DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-self_remember}:${POSTGRES_PASSWORD:-senha}@postgres:5432/evolution?schema=public
+      # A imagem vem com CACHE_REDIS_ENABLED=true por padrão e tenta
+      # localhost:6379 — sem Redis nos 5 serviços do compose (fora do escopo
+      # deste arquivo), desativa e usa cache local em memória.
+      CACHE_REDIS_ENABLED: "false"
+      CACHE_LOCAL_ENABLED: "true"
     volumes:
       - evolution_instances:/evolution/instances
     depends_on:

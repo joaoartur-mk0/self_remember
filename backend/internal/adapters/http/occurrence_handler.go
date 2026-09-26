@@ -42,7 +42,7 @@ type occurrenceResponse struct {
 // @Tags         occurrences
 // @Produce      json
 // @Success      200  {array}  occurrenceResponse
-// @Failure      400  "Usuário sem Ajustes gravados (fuso desconhecido)"
+// @Failure      404  "Usuário sem Ajustes gravados (fuso desconhecido) — mesma condição de GET /settings"
 // @Router       /occurrences/today [get]
 func (h *OccurrenceHandler) Today(c *gin.Context) {
 	userID := userIDFrom(c)
@@ -50,7 +50,7 @@ func (h *OccurrenceHandler) Today(c *gin.Context) {
 	userSettings, err := h.settings.FindByUser(c.Request.Context(), userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusBadRequest)
+			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
 		c.AbortWithStatus(http.StatusInternalServerError)

@@ -13,10 +13,11 @@ import (
 // Handlers agrupa os handlers de negócio do cmd/api — um parâmetro só, em
 // vez de uma lista de argumentos que cresce a cada rota nova.
 type Handlers struct {
-	Auth     *AuthHandler
-	Area     *AreaHandler
-	Label    *LabelHandler
-	Settings *SettingsHandler
+	Auth       *AuthHandler
+	Area       *AreaHandler
+	Label      *LabelHandler
+	Settings   *SettingsHandler
+	Commitment *CommitmentHandler
 }
 
 // NewRouter monta as rotas do cmd/api: health check e swagger públicos,
@@ -54,6 +55,10 @@ func NewRouter(h Handlers, tokens *auth.TokenIssuer) *gin.Engine {
 
 	protected.GET("/settings", h.Settings.Get)
 	protected.PUT("/settings", h.Settings.Update)
+
+	protected.POST("/commitments", h.Commitment.Create)
+	protected.GET("/commitments", h.Commitment.List)
+	protected.POST("/commitments/:id/archive", h.Commitment.Archive)
 
 	return router
 }

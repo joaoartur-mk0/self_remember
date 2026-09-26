@@ -106,6 +106,17 @@ func (r *CommitmentRepository) FindByID(ctx context.Context, id uuid.UUID) (comm
 	return m.toDomain(), nil
 }
 
+// FindByIDForUser busca um Compromisso pelo ID, restrito ao usuário
+// informado — isolamento por user_id (ADR-0001). Retorna
+// gorm.ErrRecordNotFound se não existir ou não pertencer a ele.
+func (r *CommitmentRepository) FindByIDForUser(ctx context.Context, id, userID uuid.UUID) (commitment.Commitment, error) {
+	var m CommitmentModel
+	if err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&m).Error; err != nil {
+		return commitment.Commitment{}, err
+	}
+	return m.toDomain(), nil
+}
+
 // FindByUser lista os Compromissos de um usuário, mais recentes primeiro.
 func (r *CommitmentRepository) FindByUser(ctx context.Context, userID uuid.UUID, includeArchived bool) ([]commitment.Commitment, error) {
 	q := r.db.WithContext(ctx).Where("user_id = ?", userID)

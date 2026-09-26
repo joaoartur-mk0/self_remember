@@ -36,9 +36,9 @@ func NewUserSettingsRepository(db *gorm.DB) *UserSettingsRepository {
 }
 
 // FindByUser busca os Ajustes de um usuário. Retorna gorm.ErrRecordNotFound
-// se o usuário não tiver linha em user_settings — hoje isso não deveria
-// acontecer (cmd/admin cria a linha junto do usuário), mas o chamador
-// decide o que fazer, não este repositório.
+// se o usuário não tiver linha em user_settings — hoje isso é possível
+// porque cmd/admin ainda não grava essa linha na criação (fica para A6); o
+// chamador decide o que fazer, não este repositório.
 func (r *UserSettingsRepository) FindByUser(ctx context.Context, userID uuid.UUID) (*UserSettingsModel, error) {
 	var m UserSettingsModel
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&m).Error; err != nil {

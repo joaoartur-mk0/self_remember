@@ -60,17 +60,22 @@ services:
 
   # WhatsApp (ADR-0005). O worker fala com ela via
   # SELF_REMEMBER_EVOLUTION_BASE_URL=http://evolution:8080 (.env) — api não
-  # precisa dela, por isso a porta não é publicada para o host.
+  # precisa dela, por isso a porta não é publicada para o host. Imagem e tag
+  # conforme a documentação oficial (o projeto migrou de atendai/ para
+  # evoapicloud/ como organização no Docker Hub).
   evolution:
-    image: atendai/evolution-api:v2.3.6
+    image: evoapicloud/evolution-api:v2.1.1
     environment:
       AUTHENTICATION_API_KEY: ${SELF_REMEMBER_EVOLUTION_API_KEY:-dev-local-evolution-key}
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: postgresql
       DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-self_remember}:${POSTGRES_PASSWORD:-senha}@postgres:5432/evolution?schema=public
+    volumes:
+      - evolution_instances:/evolution/instances
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   postgres_data:
+  evolution_instances:

@@ -57,13 +57,15 @@ func main() {
 	refreshTokens := postgres.NewRefreshTokenRepository(gormDB)
 	areas := postgres.NewAreaRepository(gormDB)
 	labels := postgres.NewLabelRepository(gormDB)
+	settings := postgres.NewUserSettingsRepository(gormDB)
 	loginUseCase := auth.NewLoginUseCase(users, refreshTokens, tokens, time.Now)
 	refreshUseCase := auth.NewRefreshUseCase(refreshTokens, tokens, time.Now)
 
 	handlers := httpadapter.Handlers{
-		Auth:  httpadapter.NewAuthHandler(loginUseCase, refreshUseCase),
-		Area:  httpadapter.NewAreaHandler(areas),
-		Label: httpadapter.NewLabelHandler(labels),
+		Auth:     httpadapter.NewAuthHandler(loginUseCase, refreshUseCase),
+		Area:     httpadapter.NewAreaHandler(areas),
+		Label:    httpadapter.NewLabelHandler(labels),
+		Settings: httpadapter.NewSettingsHandler(settings),
 	}
 
 	router := httpadapter.NewRouter(handlers, tokens)

@@ -1,0 +1,7 @@
+.git
+/frontend
+/node_modules
+/graphify-out
+/docs
+/*.md
+backend/**/*_test.go

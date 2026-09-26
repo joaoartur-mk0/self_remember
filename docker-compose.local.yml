@@ -1,0 +1,76 @@
+# Composição local de desenvolvimento — sem TLS, sem Traefik, logs em texto,
+# exatamente como ARCHITECTURE.md §9 especifica para este arquivo. Nunca usar
+# em produção.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-self_remember}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-senha}
+      POSTGRES_DB: ${POSTGRES_DB:-self_remember}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Cria a base "evolution" na primeira inicialização — ver o comentário
+      # no próprio script sobre por que a EvolutionAPI não usa sqlite aqui.
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-self_remember}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: api
+    env_file: .env
+    environment:
+      # Sobrescreve o valor de .env (pensado para um binário local, host
+      # "localhost") — dentro da rede do compose, o Postgres está em
+      # "postgres", não em "localhost".
+      SELF_REMEMBER_DATABASE_URL: postgres://${POSTGRES_USER:-self_remember}:${POSTGRES_PASSWORD:-senha}@postgres:5432/${POSTGRES_DB:-self_remember}?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: worker
+    env_file: .env
+    environment:
+      SELF_REMEMBER_DATABASE_URL: postgres://${POSTGRES_USER:-self_remember}:${POSTGRES_PASSWORD:-senha}@postgres:5432/${POSTGRES_DB:-self_remember}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+  # WhatsApp (ADR-0005). O worker fala com ela via
+  # SELF_REMEMBER_EVOLUTION_BASE_URL=http://evolution:8080 (.env) — api não
+  # precisa dela, por isso a porta não é publicada para o host.
+  evolution:
+    image: atendai/evolution-api:v2.3.6
+    environment:
+      AUTHENTICATION_API_KEY: ${SELF_REMEMBER_EVOLUTION_API_KEY:-dev-local-evolution-key}
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-self_remember}:${POSTGRES_PASSWORD:-senha}@postgres:5432/evolution?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

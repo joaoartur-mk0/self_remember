@@ -92,6 +92,20 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   `users`/`user_settings` na mesma transação — um usuário nunca existe sem
   fuso, encerrando a lacuna que a Fase 5 (API mínima para o frontend existir)
   precisava fechar.
+- `frontend/`: Vite + React + Tailwind v4 (`@tailwindcss/vite`), react-router.
+  Três telas — Hoje (Reconhecimento com os três botões em peso visual igual,
+  ARCHITECTURE.md §6), Compromissos (criação + Arquivar) e Ajustes (fuso via
+  `Intl.supportedValuesOf`, Janela de Silêncio). `src/lib/api.ts`:
+  `credentials: 'include'` sempre, uma única tentativa de `/auth/refresh` em
+  401 antes de redirecionar para `/login`. Sem UI kit.
+- `docker-compose.local.yml` e `backend/Dockerfile`/`frontend/Dockerfile`:
+  composição local com Postgres, `api`, `worker`, `web` (nginx fazendo proxy
+  reverso de `/api/` para `api:8080` — obrigatório para o cookie
+  `SameSite=Strict` do backend chegar) e `evolution`. Desvio do plano
+  original: a EvolutionAPI não aceita `DATABASE_PROVIDER=sqlite` (só
+  `postgresql`/`mysql`, confirmado na documentação oficial) — ela usa uma
+  segunda base no mesmo Postgres do compose (`docker/postgres-init`), não
+  SQLite interno.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

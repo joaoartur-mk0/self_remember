@@ -13,6 +13,7 @@ import (
 	"self-remember/backend/internal/adapters/postgres"
 	"self-remember/backend/internal/app/auth"
 	commitmentapp "self-remember/backend/internal/app/commitment"
+	occurrenceapp "self-remember/backend/internal/app/occurrence"
 	"self-remember/backend/internal/platform/config"
 	"self-remember/backend/internal/platform/database"
 	"self-remember/backend/internal/platform/logging"
@@ -61,6 +62,9 @@ func main() {
 	settings := postgres.NewUserSettingsRepository(gormDB)
 	commitments := postgres.NewCommitmentRepository(gormDB)
 	createCommitment := commitmentapp.NewCreateUseCase(commitments, areas, labels)
+	occurrences := postgres.NewOccurrenceRepository(gormDB)
+	acks := postgres.NewAckRepository(gormDB)
+	ackUseCase := occurrenceapp.NewAckUseCase(occurrences, acks)
 	loginUseCase := auth.NewLoginUseCase(users, refreshTokens, tokens, time.Now)
 	refreshUseCase := auth.NewRefreshUseCase(refreshTokens, tokens, time.Now)
 
@@ -70,6 +74,7 @@ func main() {
 		Label:      httpadapter.NewLabelHandler(labels),
 		Settings:   httpadapter.NewSettingsHandler(settings),
 		Commitment: httpadapter.NewCommitmentHandler(createCommitment, commitments),
+		Occurrence: httpadapter.NewOccurrenceHandler(occurrences, settings, ackUseCase),
 	}
 
 	router := httpadapter.NewRouter(handlers, tokens)

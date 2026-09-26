@@ -18,6 +18,7 @@ type Handlers struct {
 	Label      *LabelHandler
 	Settings   *SettingsHandler
 	Commitment *CommitmentHandler
+	Occurrence *OccurrenceHandler
 }
 
 // NewRouter monta as rotas do cmd/api: health check e swagger públicos,
@@ -59,6 +60,11 @@ func NewRouter(h Handlers, tokens *auth.TokenIssuer) *gin.Engine {
 	protected.POST("/commitments", h.Commitment.Create)
 	protected.GET("/commitments", h.Commitment.List)
 	protected.POST("/commitments/:id/archive", h.Commitment.Archive)
+
+	protected.GET("/occurrences/today", h.Occurrence.Today)
+	protected.POST("/occurrences/:id/complete", h.Occurrence.Complete)
+	protected.POST("/occurrences/:id/dismiss", h.Occurrence.Dismiss)
+	protected.POST("/occurrences/:id/snooze", h.Occurrence.Snooze)
 
 	return router
 }

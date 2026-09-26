@@ -1,9 +1,15 @@
 package occurrence
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
+
+// ErrSnoozeMustBeAfterCurrent é devolvido por Snooze quando newDueAt não é
+// estritamente posterior ao vencimento atual — distinto de TransitionError
+// porque o estado de partida (nagging) era válido; só o valor pedido não.
+var ErrSnoozeMustBeAfterCurrent = errors.New("novo vencimento precisa ser depois do atual")
 
 // TransitionError reporta uma transição de estado que o diagrama em
 // ARCHITECTURE.md §4 não permite.
@@ -66,7 +72,7 @@ func (o Occurrence) Snooze(newDueAt time.Time) (Occurrence, error) {
 		return o, &TransitionError{From: o.State, Method: "Snooze"}
 	}
 	if !newDueAt.After(o.DueAt) {
-		return o, fmt.Errorf("novo vencimento (%v) precisa ser depois do atual (%v)", newDueAt, o.DueAt)
+		return o, fmt.Errorf("%w: pedido %v, atual %v", ErrSnoozeMustBeAfterCurrent, newDueAt, o.DueAt)
 	}
 	o.State = StateSnoozed
 	o.DueAt = newDueAt

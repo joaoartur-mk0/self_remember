@@ -47,4 +47,24 @@ export interface Settings {
   timezone: string;
   quiet_hours_start?: string;
   quiet_hours_end?: string;
+  default_nag_profile: NagProfile;
+  default_carry_over_policy: CarryOverPolicy;
+}
+
+export type ChannelKind = "email" | "whatsapp";
+
+export interface Channel {
+  id: string;
+  kind: ChannelKind;
+  address: string;
+  verified: boolean;
+  fallback_order: number;
+}
+
+export interface InstanceStatus {
+  state: string;
+}
+
+export interface InstanceQRCode {
+  qrcode: string;
 }

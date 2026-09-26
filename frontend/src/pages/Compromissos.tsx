@@ -1,9 +1,20 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Layout } from "../components/Layout";
-import { api } from "../lib/api";
-import type { Area, Commitment, Label } from "../lib/types";
+import { api, ApiError } from "../lib/api";
+import type { Area, CarryOverPolicy, Commitment, Label, NagProfile, Settings } from "../lib/types";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm";
+
+// Presets de recorrência — a expansão real (backend/internal/domain/commitment
+// /recurrence.go, via rrule-go) usa DTSTART para o dia da semana/mês, então
+// FREQ sozinho já é suficiente: nenhum BYDAY manual é necessário aqui. Um
+// editor de RRULE livre é trabalho de UI própria, fora deste corte.
+const RECURRENCE_PRESETS: { label: string; rule: string }[] = [
+  { label: "Não repete", rule: "" },
+  { label: "Diário", rule: "FREQ=DAILY" },
+  { label: "Semanal", rule: "FREQ=WEEKLY" },
+  { label: "Mensal", rule: "FREQ=MONTHLY" },
+];
 
 export function Compromissos() {
   const [commitments, setCommitments] = useState<Commitment[]>([]);
@@ -14,8 +25,8 @@ export function Compromissos() {
   const [areaID, setAreaID] = useState("");
   const [recurrenceStart, setRecurrenceStart] = useState("");
   const [recurrenceRule, setRecurrenceRule] = useState("");
-  const [nagProfile, setNagProfile] = useState("normal");
-  const [carryOverPolicy, setCarryOverPolicy] = useState("stack");
+  const [nagProfile, setNagProfile] = useState<NagProfile>("normal");
+  const [carryOverPolicy, setCarryOverPolicy] = useState<CarryOverPolicy>("stack");
   const [labelIDs, setLabelIDs] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +39,17 @@ export function Compromissos() {
     reloadCommitments().catch(console.error);
     api.get<Area[]>("/areas").then(setAreas).catch(console.error);
     api.get<Label[]>("/labels").then(setLabels).catch(console.error);
+    // Pré-seleciona os padrões de Ajustes — 404 (sem Ajustes gravados ainda)
+    // apenas mantém "normal"/"stack", os padrões locais destes campos.
+    api
+      .get<Settings>("/settings")
+      .then((s) => {
+        setNagProfile(s.default_nag_profile);
+        setCarryOverPolicy(s.default_carry_over_policy);
+      })
+      .catch((err) => {
+        if (!(err instanceof ApiError && err.status === 404)) console.error(err);
+      });
   }, []);
 
   function toggleLabel(id: string) {
@@ -120,16 +142,23 @@ export function Compromissos() {
         </div>
 
         <div>
-          <label htmlFor="recurrence-rule" className="block text-sm font-medium text-slate-700">
-            Regra de recorrência (RRULE, opcional)
-          </label>
-          <input
-            id="recurrence-rule"
-            value={recurrenceRule}
-            onChange={(e) => setRecurrenceRule(e.target.value)}
-            placeholder="FREQ=WEEKLY;BYDAY=MO"
-            className={inputClass}
-          />
+          <span className="block text-sm font-medium text-slate-700">Recorrência</span>
+          <div className="flex flex-wrap gap-2">
+            {RECURRENCE_PRESETS.map((preset) => (
+              <button
+                type="button"
+                key={preset.label}
+                onClick={() => setRecurrenceRule(preset.rule)}
+                className={`rounded-full border px-3 py-1 text-sm ${
+                  recurrenceRule === preset.rule
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-300 text-slate-700"
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-4">
@@ -140,7 +169,7 @@ export function Compromissos() {
             <select
               id="nag-profile"
               value={nagProfile}
-              onChange={(e) => setNagProfile(e.target.value)}
+              onChange={(e) => setNagProfile(e.target.value as NagProfile)}
               className={inputClass}
             >
               <option value="leve">Leve</option>
@@ -155,7 +184,7 @@ export function Compromissos() {
             <select
               id="carry-over-policy"
               value={carryOverPolicy}
-              onChange={(e) => setCarryOverPolicy(e.target.value)}
+              onChange={(e) => setCarryOverPolicy(e.target.value as CarryOverPolicy)}
               className={inputClass}
             >
               <option value="stack">Acumular</option>

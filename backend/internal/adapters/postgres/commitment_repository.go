@@ -152,7 +152,9 @@ func (r *CommitmentRepository) Update(ctx context.Context, c commitment.Commitme
 		}).Error
 }
 
-// Archive marca um Compromisso como arquivado.
+// Archive marca um Compromisso como arquivado. Não é escopado por usuário —
+// quem chama precisa confirmar posse antes (ex.: via FindByIDForUser), como
+// já faz o handler HTTP.
 func (r *CommitmentRepository) Archive(ctx context.Context, id uuid.UUID, at time.Time) error {
 	return r.db.WithContext(ctx).
 		Model(&CommitmentModel{}).

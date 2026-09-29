@@ -145,6 +145,14 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   create-user ...` fecha isso. README atualizado com o comando (também
   corrige a seção "Rodando localmente", que ainda dizia "ainda não há o que
   rodar").
+- Healthcheck no serviço `evolution` do compose local: no primeiro boot ela
+  roda ~42 migrations do Prisma antes de aceitar conexão (30-60s), e
+  `worker`/`api` chamavam `http://evolution:8080` nesse meio-tempo — os 502 e
+  "connection refused" nos logs são o comportamento correto de degradação
+  graciosa (ADR-0005), não um defeito. O healthcheck existe só para
+  visibilidade em `docker compose ps`; `worker`/`api` continuam sem esperar
+  por ele de propósito, porque WhatsApp é um Canal com fallback, não uma
+  dependência dura do resto do sistema.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

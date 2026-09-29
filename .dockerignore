@@ -1,0 +1,8 @@
+# Contexto de build do backend/Dockerfile é a raiz do repo (context: .
+# em docker-compose.local.yml), então o que não interessa ao build Go
+# precisa ser excluído daqui, não de um .dockerignore dentro de backend/.
+.git
+frontend/node_modules
+frontend/dist
+.claude
+graphify-out/

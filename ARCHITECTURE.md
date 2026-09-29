@@ -117,8 +117,8 @@ Apenas a forma; o DDL fica em `backend/migrations/`.
 | Tabela | Papel | Pontos não óbvios |
 |---|---|---|
 | `users` | conta | senha com argon2id |
-| `user_settings` | preferências | `timezone` (IANA, obrigatório), `quiet_hours_start/end`, Canal padrão |
-| `channels` | Canais do usuário | `kind`, `address`, `config` cifrado, `verified_at`, `fallback_order` |
+| `user_settings` | preferências | `timezone` (IANA, obrigatório), `quiet_hours_start/end`, `default_nag_profile`/`default_carry_over_policy` (pré-seleção do formulário de Compromisso, sem efeito no motor) |
+| `channels` | Canais do usuário | `kind`, `address`, `config` cifrado, `verified_at`, `fallback_order`, `verification_code_hash`/`verification_expires_at` (código de 6 dígitos, hash sha256, expira em 15 min) |
 | `areas` | Áreas de vida | `name`, `color`, Janela de Silêncio própria opcional |
 | `labels` / `commitment_labels` | Etiquetas | N:N, sem efeito na cobrança |
 | `commitments` | Compromissos | `recurrence_rule` (RRULE), `nag_profile`, `carry_over_policy`, `archived_at` |
@@ -203,7 +203,11 @@ Três telas bastam para o MVP:
    escondê-lo faz o usuário concluir mentindo, e aí o sistema perde a capacidade de
    distinguir o que ele faz do que ele só diz que vai fazer.
 2. **Compromissos** — CRUD, recorrência, Área, Perfil de Insistência, Etiquetas.
-3. **Ajustes** — fuso, Janela de Silêncio, Canais e sua ordem de fallback.
+3. **Ajustes** — fuso, Janela de Silêncio, Canais e sua ordem de fallback. Também reúne
+   duas seções que não estavam nas três telas originais mas pertencem naturalmente aqui:
+   Preferências padrão de Compromisso (Perfil de Insistência/Política de Acúmulo, só
+   pré-selecionam o formulário) e o painel de status/QR code da instância WhatsApp desta
+   instalação — uma só, não por usuário (ADR-0001).
 
 Não há Kanban. O documento original define o produto pela negação do painel bonito
 esquecido em duas semanas; construir o painel de cards seria contradizer a própria tese.
@@ -257,5 +261,8 @@ Segredos por variáveis de ambiente a partir de um `.env` fora do versionamento;
 Fundação, Domínio puro, Motor e Canais reais (Fases 1–4) estão prontos. A Fase 5 (API e
 frontend) cobre CRUD de Área/Etiqueta, Compromissos (Create/List/Archive — edição fica para
 quando existir regeneração de Ocorrências, ADR-0002), o ciclo de Ocorrência/Reconhecimento
-(Hoje, Complete/Dismiss/Snooze, com o log de auditoria `acks`) e Ajustes (fuso e Janela de
-Silêncio). O histórico detalhado de cada entrega está no [`CHANGELOG.md`](./CHANGELOG.md).
+(Hoje, Complete/Dismiss/Snooze, com o log de auditoria `acks`), Ajustes (fuso, Janela de
+Silêncio, Preferências padrão) e o CRUD de Canais com verificação por código (Canais,
+painel de status/QR code da instância WhatsApp). O frontend (Vite + React + Tailwind) cobre
+as três telas do §6, e `docker-compose.local.yml` sobe os cinco serviços do §9 localmente.
+O histórico detalhado de cada entrega está no [`CHANGELOG.md`](./CHANGELOG.md).

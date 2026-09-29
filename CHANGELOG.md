@@ -106,6 +106,38 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   `postgresql`/`mysql`, confirmado na documentação oficial) — ela usa uma
   segunda base no mesmo Postgres do compose (`docker/postgres-init`), não
   SQLite interno.
+- Canais: `POST/GET/DELETE /api/v1/channels` e
+  `POST /api/v1/channels/:id/{verify/request,verify/confirm}`. Verificação por
+  código de 6 dígitos, hasheado (sha256) com expiração de 15 min, enviado pelo
+  próprio Canal a verificar (SMTP ou EvolutionAPI) — um Canal só entra na
+  cadeia de fallback depois de confirmado (ARCHITECTURE.md §7). Novo Canal
+  sempre entra ao fim da cadeia; reordenar fica para uma tela futura.
+  `cmd/api` passa a carregar config de SMTP/Evolution além do `cmd/worker`
+  (antes só quem enviava mensagens de verdade lia essas variáveis).
+- `GET /api/v1/whatsapp-instance/{status,qrcode}`: painel de status e
+  pareamento por QR code da única instância WhatsApp desta instalação — não
+  há provisionamento por usuário (ADR-0001 já rejeita isso explicitamente).
+- Correção: `Request()` da verificação de Canal misturava falha de
+  persistência (nosso banco, 500) com falha de envio (SMTP/EvolutionAPI fora
+  do ar) — as duas viravam 502. Novo `ErrSendFailed` isola só o segundo caso.
+  `.env.example` atualizado para refletir que `cmd/api` também lê essas
+  variáveis agora. Achado pelo `/code-review` dos dois commits anteriores.
+- Compromissos: recorrência por presets (Não repete/Diário/Semanal/Mensal)
+  substitui o campo de texto RRULE cru no formulário — `BYDAY`/`BYMONTHDAY`
+  seguem o `DTSTART` por padrão (RFC 5545). Perfil de Insistência e Política
+  de Acúmulo do formulário vêm pré-selecionados de `GET /settings`.
+- Ajustes: migration `0013` adiciona `default_nag_profile`/
+  `default_carry_over_policy` a `user_settings` — só pré-selecionam o
+  formulário de criação de Compromisso, sem efeito em Compromissos já
+  criados nem no motor de cobrança. `cmd/admin create-user` grava os mesmos
+  valores do `DEFAULT` da coluna explicitamente (um `Upsert` com zero-value
+  sobrescreveria o default do banco).
+- Correção: o painel do QR code buscava o código pela primeira vez só depois
+  de 5s (`setInterval` só dispara no primeiro tick após o intervalo) — a
+  tela ficava em branco até lá. Achado pelo `/code-review`.
+- `.dockerignore` na raiz do repo: o contexto de build do `backend/Dockerfile`
+  é a raiz (não `backend/`), então precisava excluir `.git`,
+  `frontend/node_modules` e `frontend/dist` daqui, não de dentro de `backend/`.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

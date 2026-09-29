@@ -138,6 +138,13 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
 - `.dockerignore` na raiz do repo: o contexto de build do `backend/Dockerfile`
   é a raiz (não `backend/`), então precisava excluir `.git`,
   `frontend/node_modules` e `frontend/dist` daqui, não de dentro de `backend/`.
+- Estágio `admin` em `backend/Dockerfile` e serviço `admin` (perfil `tools`,
+  fora do `up` padrão) em `docker-compose.local.yml`: não existia jeito de
+  rodar `cmd/admin create-user` — a única forma de criar o primeiro usuário —
+  sem Go instalado no host. `docker compose --profile tools run --rm admin
+  create-user ...` fecha isso. README atualizado com o comando (também
+  corrige a seção "Rodando localmente", que ainda dizia "ainda não há o que
+  rodar").
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

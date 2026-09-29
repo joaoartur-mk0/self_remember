@@ -50,6 +50,23 @@ services:
       postgres:
         condition: service_healthy
 
+  # Não sobe com `up` — sem `restart`, sem porta, sem healthcheck: existe só
+  # para `docker compose run --rm admin create-user --email ... --name ...
+  # --timezone ...` (cadastro fechado por padrão, ADR-0001).
+  admin:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: admin
+    env_file: .env
+    environment:
+      SELF_REMEMBER_DATABASE_URL: postgres://${POSTGRES_USER:-self_remember}:${POSTGRES_PASSWORD:-senha}@postgres:5432/${POSTGRES_DB:-self_remember}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - tools
+
   web:
     build:
       context: ./frontend

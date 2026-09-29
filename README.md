@@ -64,20 +64,27 @@ sugerir que aquele compromisso talvez não devesse existir.
 
 ## Rodando localmente
 
-Ainda não há o que rodar. Quando houver:
-
 ```bash
 cp .env.example .env          # preencha os segredos
-docker compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml up -d --build
 ```
 
-- API: http://localhost:8080 — Swagger em `/swagger/index.html`
 - Frontend: http://localhost:5173
+- API: http://localhost:8080 — Swagger em `/swagger/index.html`
 - Postgres: `localhost:5432`
 
-O primeiro usuário é criado por comando administrativo (o cadastro aberto é desligado por
-padrão), e cada canal precisa ser verificado antes de receber a primeira cobrança de
-verdade.
+Não existe usuário padrão nem seed — o cadastro é fechado por padrão (ADR-0001). O
+primeiro usuário é criado pelo `cmd/admin`, que não sobe com `up` (perfil `tools`,
+`docker compose run`, nunca um serviço de longa duração):
+
+```bash
+docker compose --profile tools -f docker-compose.local.yml run --rm admin \
+  create-user --email voce@exemplo.com --name "Seu Nome" --timezone America/Sao_Paulo
+# prompt "senha:" — digite e Enter
+```
+
+Cada Canal (WhatsApp/e-mail) precisa ser verificado em Ajustes antes de receber a
+primeira cobrança de verdade.
 
 ## Ordem sugerida de construção
 

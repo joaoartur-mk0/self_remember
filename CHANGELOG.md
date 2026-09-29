@@ -153,6 +153,17 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   visibilidade em `docker compose ps`; `worker`/`api` continuam sem esperar
   por ele de propósito, porque WhatsApp é um Canal com fallback, não uma
   dependência dura do resto do sistema.
+- Correção: causa real do "EvolutionAPI inacessível" persistente (não só o
+  warm-up). Uma instalação nova da EvolutionAPI não vem com nenhuma
+  instância, e nada no código criava a instância desta instalação — todo
+  `ConnectionState`/`Connect`/`Send` batia num 404 traduzido para erro
+  genérico de "inacessível". Novo `ErrInstanceNotFound` distingue "instância
+  não existe" de falha de conectividade de verdade; `EnsureInstance`
+  provisiona sob demanda (`POST /instance/create`) a partir de `Connect` e
+  `Send` — ações deliberadas de usar o WhatsApp agora — nunca a partir de
+  `HealthCheck`, que só deve reportar o que existe. `GET
+  /whatsapp-instance/status` devolve `state: "not_provisioned"` (200, não
+  502) nesse caso; o painel mostra "nunca configurado" em vez de erro.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

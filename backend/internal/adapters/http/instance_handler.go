@@ -1,12 +1,21 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"self-remember/backend/internal/adapters/evolution"
 )
+
+// stateNotProvisioned é um valor sintético, que a EvolutionAPI nunca
+// devolve — só existe para distinguir "instância nunca criada" (estado
+// normal antes do primeiro pareamento) de "servidor inacessível" (falha de
+// verdade). QRCode provisiona a instância automaticamente; o painel só
+// precisa saber que isto não é um erro para não mostrar "EvolutionAPI
+// inacessível" na primeira vez que alguém abre Ajustes.
+const stateNotProvisioned = "not_provisioned"
 
 // InstanceHandler expõe o status e o pareamento por QR code da única
 // instância WhatsApp desta instalação (ADR-0001: instância, não por
@@ -27,6 +36,7 @@ type instanceStatusResponse struct {
 
 // Status godoc
 // @Summary      Estado da instância WhatsApp
+// @Description  state="not_provisioned" significa que a instância ainda não foi criada — normal antes do primeiro pareamento, não é falha.
 // @Tags         whatsapp-instance
 // @Produce      json
 // @Success      200  {object}  instanceStatusResponse
@@ -35,6 +45,10 @@ type instanceStatusResponse struct {
 func (h *InstanceHandler) Status(c *gin.Context) {
 	state, err := h.evolution.ConnectionState(c.Request.Context())
 	if err != nil {
+		if errors.Is(err, evolution.ErrInstanceNotFound) {
+			c.JSON(http.StatusOK, instanceStatusResponse{State: stateNotProvisioned})
+			return
+		}
 		c.AbortWithStatus(http.StatusBadGateway)
 		return
 	}

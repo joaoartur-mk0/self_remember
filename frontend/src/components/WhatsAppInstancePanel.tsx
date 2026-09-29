@@ -4,6 +4,16 @@ import type { InstanceQRCode, InstanceStatus } from "../lib/types";
 
 const POLL_INTERVAL_MS = 5000;
 
+// "not_provisioned" é sintético (não vem da EvolutionAPI): significa que a
+// instância desta instalação ainda não foi criada — normal antes do
+// primeiro pareamento, QRCode() provisiona automaticamente.
+const STATE_LABELS: Record<string, string> = {
+  open: "conectado",
+  connecting: "conectando — escaneie o QR code",
+  close: "desconectado",
+  not_provisioned: "nunca configurado — escaneie o QR code para conectar",
+};
+
 // Painel de status/pareamento da ÚNICA instância WhatsApp desta instalação
 // (ADR-0001 — instância, não por usuário: não existe uma instância por
 // usuário aqui, é a mesma para todo mundo que usar esta tela).
@@ -62,7 +72,10 @@ export function WhatsAppInstancePanel() {
 
       {!error && (
         <p className="text-sm text-slate-700">
-          Estado: <span className="font-medium">{state ?? "consultando..."}</span>
+          Estado:{" "}
+          <span className="font-medium">
+            {state ? (STATE_LABELS[state] ?? state) : "consultando..."}
+          </span>
         </p>
       )}
 

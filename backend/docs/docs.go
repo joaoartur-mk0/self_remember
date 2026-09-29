@@ -629,6 +629,7 @@ const docTemplate = `{
         },
         "/whatsapp-instance/status": {
             "get": {
+                "description": "state=\"not_provisioned\" significa que a instância ainda não foi criada — normal antes do primeiro pareamento, não é falha.",
                 "produces": [
                     "application/json"
                 ],

@@ -80,8 +80,14 @@ services:
   # precisa dela, por isso a porta não é publicada para o host. Imagem e tag
   # conforme a documentação oficial (o projeto migrou de atendai/ para
   # evoapicloud/ como organização no Docker Hub).
+  #
+  # v2.1.1 tinha um bug documentado de loop de reconexão que impedia o QR
+  # code de ser gerado (issues #2385/#2437 do projeto upstream). v2.3.7 é a
+  # versão estável mais recente no momento desta escolha — não testado de
+  # ponta a ponta aqui (sem acesso a Docker neste ambiente); se o boot falhar
+  # por variável de ambiente nova/obrigatória, é o primeiro lugar a olhar.
   evolution:
-    image: evoapicloud/evolution-api:v2.1.1
+    image: evoapicloud/evolution-api:v2.3.7
     environment:
       AUTHENTICATION_API_KEY: ${SELF_REMEMBER_EVOLUTION_API_KEY:-dev-local-evolution-key}
       DATABASE_ENABLED: "true"

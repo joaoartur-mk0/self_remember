@@ -21,7 +21,15 @@ export function WhatsAppInstancePanel() {
   const [state, setState] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [requestingQr, setRequestingQr] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // A EvolutionAPI (pelo menos v2.1.1, issues #2385/#2437 do projeto upstream)
+  // entra num loop de reconexão e nunca produz QR code se /instance/connect
+  // for chamado de novo antes do handshake anterior terminar. Por isso o QR
+  // só é pedido uma vez por "sessão de pareamento" — não a cada tick do
+  // polling — e um novo pedido depois disso é sempre uma ação explícita do
+  // usuário (botão), nunca automática.
+  const qrRequestedRef = useRef(false);
 
   async function refreshStatus() {
     try {
@@ -36,22 +44,29 @@ export function WhatsAppInstancePanel() {
   }
 
   async function requestQRCode() {
+    setRequestingQr(true);
     try {
       const result = await api.get<InstanceQRCode>("/whatsapp-instance/qrcode");
       setQrCode(result.qrcode || null);
       setError(false);
     } catch {
       setError(true);
+    } finally {
+      setRequestingQr(false);
     }
   }
 
   useEffect(() => {
     async function tick() {
       const current = await refreshStatus();
-      if (current !== "open") {
-        await requestQRCode();
-      } else {
+      if (current === "open") {
         setQrCode(null);
+        qrRequestedRef.current = false;
+        return;
+      }
+      if (current && !qrRequestedRef.current) {
+        qrRequestedRef.current = true;
+        await requestQRCode();
       }
     }
 
@@ -63,6 +78,11 @@ export function WhatsAppInstancePanel() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function handleRequestNewQr() {
+    qrRequestedRef.current = true;
+    requestQRCode();
+  }
 
   return (
     <div className="max-w-sm space-y-3 rounded-lg border border-slate-200 bg-white p-4">
@@ -84,6 +104,17 @@ export function WhatsAppInstancePanel() {
           <img src={qrCode} alt="QR code para pareamento do WhatsApp" className="w-48" />
           <p className="mt-1 text-xs text-slate-500">Escaneie com o WhatsApp do número desta instância.</p>
         </div>
+      )}
+
+      {state !== "open" && (
+        <button
+          type="button"
+          onClick={handleRequestNewQr}
+          disabled={requestingQr}
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {requestingQr ? "Gerando..." : qrCode ? "Gerar novo QR code" : "Gerar QR code"}
+        </button>
       )}
     </div>
   );

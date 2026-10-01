@@ -164,6 +164,21 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   `HealthCheck`, que só deve reportar o que existe. `GET
   /whatsapp-instance/status` devolve `state: "not_provisioned"` (200, não
   502) nesse caso; o painel mostra "nunca configurado" em vez de erro.
+- Correção: QR code nunca aparecia mesmo com a instância provisionada e o
+  estado em `"connecting"`. O painel chamava `GET /whatsapp-instance/qrcode`
+  (→ `/instance/connect`) a cada 5s indefinidamente — a EvolutionAPI v2.1.1
+  entra num loop de reconexão e nunca produz QR code se esse endpoint for
+  chamado de novo antes do handshake anterior terminar (bug documentado
+  upstream, issues #2385/#2437). `WhatsAppInstancePanel` agora só pede o QR
+  uma vez por sessão de pareamento (auto na primeira vez que o estado não é
+  `"open"`); um novo pedido depois disso é sempre um clique explícito no
+  botão "Gerar novo QR code", nunca automático. O polling de `/status`
+  continua a cada 5s — é leitura, não afeta a sessão.
+- Imagem da `evolution` no compose local atualizada de `v2.1.1` para
+  `v2.3.7` (estável mais recente no momento), na esperança de que o bug de
+  reconexão acima também esteja corrigido lá. Não testado de ponta a ponta
+  neste ambiente (sem acesso a Docker); o fix do polling acima é a correção
+  que não depende dessa troca de versão ter funcionado.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

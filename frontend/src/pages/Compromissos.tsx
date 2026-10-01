@@ -79,6 +79,21 @@ export function Compromissos() {
     setWeekdays((prev) => (prev.includes(value) ? prev.filter((w) => w !== value) : [...prev, value]));
   }
 
+  // O backend reinterpreta os DÍGITOS de recurrence_start como hora de
+  // parede no fuso configurado em Ajustes (wallClockIn, ARCHITECTURE.md
+  // §3.1) — o deslocamento que a string realmente carrega é ignorado. Por
+  // isso NUNCA construímos um Date e chamamos toISOString() aqui: isso faz
+  // o navegador converter pelo fuso DELE, corrompendo os dígitos toda vez
+  // que o fuso do navegador não é UTC+0 (e, se o desvio empurrar a hora pro
+  // passado, o Compromisso pontual nunca materializa Ocorrência nenhuma —
+  // NextOccurrenceAfter devolve ok=false silenciosamente). Os dígitos
+  // literais que o usuário escolheu, com sufixo "Z", é o que o backend
+  // espera — nunca uma conversão de verdade.
+  function toRecurrenceStart(year: number, month: number, day: number, hours: number, minutes: number): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${year}-${pad(month)}-${pad(day)}T${pad(hours)}:${pad(minutes)}:00.000Z`;
+  }
+
   // Monta recurrence_start/recurrence_rule a partir dos campos específicos de
   // cada tipo de recorrência. null significa "campos insuficientes" — quem
   // chama decide a mensagem de erro, não esta função. A data de
@@ -88,23 +103,26 @@ export function Compromissos() {
   // é seguro mesmo que hoje não seja um desses dias.
   function buildRecurrence(): { recurrenceStart: string; recurrenceRule?: string } | null {
     if (recurrenceKind === "pontual") {
+      // dueDate já vem de um <input type="datetime-local"> como
+      // "AAAA-MM-DDTHH:mm" — exatamente os dígitos que queremos, sem
+      // nenhuma interpretação de fuso no meio.
       if (!dueDate) return null;
-      return { recurrenceStart: new Date(dueDate).toISOString() };
+      return { recurrenceStart: `${dueDate}:00.000Z` };
     }
 
     if (!dueTime) return null;
     const [hours, minutes] = dueTime.split(":").map(Number);
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+    const today = new Date();
+    const recurrenceStart = toRecurrenceStart(today.getFullYear(), today.getMonth() + 1, today.getDate(), hours, minutes);
 
     if (recurrenceKind === "diario") {
-      return { recurrenceStart: start.toISOString(), recurrenceRule: "FREQ=DAILY" };
+      return { recurrenceStart, recurrenceRule: "FREQ=DAILY" };
     }
     if (recurrenceKind === "semanal") {
       if (weekdays.length === 0) return null;
-      return { recurrenceStart: start.toISOString(), recurrenceRule: `FREQ=WEEKLY;BYDAY=${weekdays.join(",")}` };
+      return { recurrenceStart, recurrenceRule: `FREQ=WEEKLY;BYDAY=${weekdays.join(",")}` };
     }
-    return { recurrenceStart: start.toISOString(), recurrenceRule: `FREQ=MONTHLY;BYMONTHDAY=${monthDay}` };
+    return { recurrenceStart, recurrenceRule: `FREQ=MONTHLY;BYMONTHDAY=${monthDay}` };
   }
 
   async function handleSubmit(e: FormEvent) {

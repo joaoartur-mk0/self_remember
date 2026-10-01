@@ -196,6 +196,21 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   (`TestNextOccurrenceAfter_WeeklyByDay`/`_MonthlyByMonthDay`) travam que
   isso funciona mesmo com `RecurrenceStart` ("hoje", que é só a âncora) num
   dia diferente do pedido pela regra.
+- Correção: Compromisso com vencimento próximo não aparecia na tela Hoje nem
+  disparava — podia até nunca materializar Ocorrência nenhuma. Causa: o
+  backend reinterpreta os dígitos de `recurrence_start` como hora de parede
+  no fuso de Ajustes (`wallClockIn`, ARCHITECTURE.md §3.1), ignorando o
+  deslocamento que a string carrega; mas o frontend montava
+  `recurrence_start` com `new Date(...).toISOString()`, que converte pelo
+  fuso do **navegador** — corrompendo os dígitos sempre que esse fuso não é
+  UTC+0. Se o desvio empurrasse a hora pro passado, `NextOccurrenceAfter`
+  devolvia `ok=false` e nenhuma Ocorrência era criada, silenciosamente. Bug
+  pré-existente aos presets de recorrência desta mesma fase, não introduzido
+  por eles. Os quatro modos de recorrência agora montam `recurrence_start` a
+  partir dos dígitos literais escolhidos pelo usuário, sem nenhuma conversão
+  de fuso no meio. O Adiamento (`Hoje.tsx`) não tinha esse problema — `due_at`
+  aí é um instante real comparado diretamente (`Occurrence.Snooze`), sem
+  `wallClockIn`.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

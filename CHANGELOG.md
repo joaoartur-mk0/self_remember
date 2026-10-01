@@ -212,6 +212,21 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   aí é um instante real comparado diretamente (`Occurrence.Snooze`), sem
   `wallClockIn`.
 
+- Correção: Compromisso com vencimento próximo materializava corretamente
+  (fuso já corrigido antes) mas ainda podia ficar até 1h sem aparecer em
+  lugar nenhum. Causa: o Materializador só roda de hora em hora
+  (`PeriodicInterval(1h)`) — `RunOnStart: true` só dispara no boot do
+  worker, não a cada Compromisso novo, então um Compromisso criado entre
+  dois ticks esperava até o próximo. Lógica de materialização de um único
+  Compromisso extraída de `jobs.MaterializadorWorker` para
+  `commitmentapp.MaterializeUseCase` (idempotente via
+  `UNIQUE(commitment_id, due_at)`, ADR-0002 — chamar de novo nunca duplica),
+  e `CreateUseCase.Create` passa a chamá-la uma vez, eager, logo após criar
+  o Compromisso. Best-effort: se não houver `user_settings` ainda (contas
+  anteriores a `cmd/admin` exigir `--timezone`), a criação não falha por
+  isso — a varredura periódica continua sendo quem garante a materialização
+  de verdade, isto só evita a espera de até 1h à toa.
+
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).
 - `ARCHITECTURE.md`: estrutura do sistema, motor de cobrança, modelo de dados e deploy.

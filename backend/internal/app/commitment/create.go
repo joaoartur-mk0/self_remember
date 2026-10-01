@@ -7,6 +7,7 @@ package commitment
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -30,14 +31,27 @@ type CreateUseCase struct {
 	commitments *postgres.CommitmentRepository
 	areas       *postgres.AreaRepository
 	labels      *postgres.LabelRepository
+	settings    *postgres.UserSettingsRepository
+	materialize *MaterializeUseCase
+	now         func() time.Time
 }
 
 func NewCreateUseCase(
 	commitments *postgres.CommitmentRepository,
 	areas *postgres.AreaRepository,
 	labels *postgres.LabelRepository,
+	settings *postgres.UserSettingsRepository,
+	materialize *MaterializeUseCase,
+	now func() time.Time,
 ) *CreateUseCase {
-	return &CreateUseCase{commitments: commitments, areas: areas, labels: labels}
+	return &CreateUseCase{
+		commitments: commitments,
+		areas:       areas,
+		labels:      labels,
+		settings:    settings,
+		materialize: materialize,
+		now:         now,
+	}
 }
 
 // Create valida o Compromisso (domínio puro), confirma posse de Área e
@@ -64,6 +78,19 @@ func (uc *CreateUseCase) Create(ctx context.Context, c commitment.Commitment, la
 	}
 	if err := uc.commitments.SetLabels(ctx, c.ID, labelIDs); err != nil {
 		return commitment.Commitment{}, err
+	}
+
+	// Materializa a primeira janela de Ocorrências agora, em vez de esperar
+	// o próximo tick do Materializador (de hora em hora) — sem isso, um
+	// Compromisso com vencimento em poucos minutos podia ficar até 1h sem
+	// aparecer na tela Hoje nem disparar nada. Best-effort: se falhar (ex.:
+	// usuário sem user_settings ainda, só possível para contas anteriores a
+	// cmd/admin exigir --timezone), o Compromisso mesmo assim foi criado com
+	// sucesso — a varredura periódica é quem garante a materialização de
+	// verdade, isto aqui é só não fazer o usuário esperar por ela à toa.
+	if settings, err := uc.settings.FindByUser(ctx, c.UserID); err == nil {
+		active := postgres.ActiveCommitment{Commitment: c, Timezone: settings.Timezone}
+		_, _ = uc.materialize.Materialize(ctx, active, uc.now())
 	}
 
 	return c, nil

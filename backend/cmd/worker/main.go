@@ -15,6 +15,7 @@ import (
 	"self-remember/backend/internal/adapters/evolution"
 	"self-remember/backend/internal/adapters/postgres"
 	"self-remember/backend/internal/adapters/smtp"
+	commitmentapp "self-remember/backend/internal/app/commitment"
 	"self-remember/backend/internal/domain/channel"
 	"self-remember/backend/internal/jobs"
 	"self-remember/backend/internal/platform/config"
@@ -101,7 +102,8 @@ func main() {
 	}
 
 	workers := river.NewWorkers()
-	river.AddWorker(workers, jobs.NewMaterializadorWorker(commitmentRepo, occurrenceRepo, logger, time.Now))
+	materializeCommitment := commitmentapp.NewMaterializeUseCase(occurrenceRepo)
+	river.AddWorker(workers, jobs.NewMaterializadorWorker(commitmentRepo, materializeCommitment, logger, time.Now))
 	river.AddWorker(workers, jobs.NewScannerWorker(dbPool, logger, time.Now))
 	river.AddWorker(workers, jobs.NewEntregadorWorker(deliveryRepo, channelRepo, occurrenceRepo, senders, logger))
 	river.AddWorker(workers, jobs.NewGuardiaoWorker(occurrenceRepo, logger, time.Now))

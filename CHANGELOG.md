@@ -179,6 +179,13 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   reconexão acima também esteja corrigido lá. Não testado de ponta a ponta
   neste ambiente (sem acesso a Docker); o fix do polling acima é a correção
   que não depende dessa troca de versão ter funcionado.
+- `AreasSection`: cadastro de Áreas embutido na própria tela de Compromissos
+  (nome + cor), não em Ajustes — Área é pré-requisito para criar um
+  Compromisso (o `<select>` do formulário não tinha de onde vir nenhuma
+  opção antes disso) e fica no lugar onde é usada. Lista com a cor de cada
+  Área já cadastrada; `Compromissos` repassa `onChange` para manter seu
+  próprio `<select>` sincronizado sem cada um buscar `/areas` por conta
+  própria.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

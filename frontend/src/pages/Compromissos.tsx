@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { AreasSection } from "../components/AreasSection";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../lib/api";
 import type { Area, CarryOverPolicy, Commitment, Label, NagProfile, Settings } from "../lib/types";
@@ -37,7 +38,6 @@ export function Compromissos() {
 
   useEffect(() => {
     reloadCommitments().catch(console.error);
-    api.get<Area[]>("/areas").then(setAreas).catch(console.error);
     api.get<Label[]>("/labels").then(setLabels).catch(console.error);
     // Pré-seleciona os padrões de Ajustes — 404 (sem Ajustes gravados ainda)
     // apenas mantém "normal"/"stack", os padrões locais destes campos.
@@ -90,6 +90,8 @@ export function Compromissos() {
   return (
     <Layout>
       <h1 className="mb-4 text-lg font-semibold text-slate-900">Compromissos</h1>
+
+      <AreasSection onChange={setAreas} />
 
       <form onSubmit={handleSubmit} className="mb-8 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
         <div>

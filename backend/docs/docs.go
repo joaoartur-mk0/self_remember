@@ -698,6 +698,9 @@ const docTemplate = `{
                 "carry_over_policy": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -766,6 +769,7 @@ const docTemplate = `{
             "required": [
                 "area_id",
                 "carry_over_policy",
+                "description",
                 "nag_profile",
                 "recurrence_start",
                 "title"
@@ -775,6 +779,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "carry_over_policy": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "label_ids": {

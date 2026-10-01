@@ -121,7 +121,7 @@ Apenas a forma; o DDL fica em `backend/migrations/`.
 | `channels` | Canais do usuário | `kind`, `address`, `config` cifrado, `verified_at`, `fallback_order`, `verification_code_hash`/`verification_expires_at` (código de 6 dígitos, hash sha256, expira em 15 min) |
 | `areas` | Áreas de vida | `name`, `color`, Janela de Silêncio própria opcional |
 | `labels` / `commitment_labels` | Etiquetas | N:N, sem efeito na cobrança |
-| `commitments` | Compromissos | `recurrence_rule` (RRULE), `nag_profile`, `carry_over_policy`, `archived_at` |
+| `commitments` | Compromissos | `title`, `description` (o que é — vai na Cobrança junto da Área), `recurrence_rule` (RRULE), `nag_profile`, `carry_over_policy`, `archived_at` |
 | `occurrences` | Ocorrências | `due_at` (timestamptz), `timezone`, `state`, `current_step`; único em `(commitment_id, due_at)` |
 | `deliveries` | Entregas | único em `(occurrence_id, step_index, channel_id)`, `correlation_id`, `provider_message_id`, `status` |
 | `acks` | Reconhecimentos | `kind` (`completion`/`snooze`/`dismissal`), `source` (`web`/`channel`/`system`), `channel_id` nulo |

@@ -227,6 +227,17 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   isso — a varredura periódica continua sendo quem garante a materialização
   de verdade, isto só evita a espera de até 1h à toa.
 
+- Compromisso ganha `description`, campo principal junto de título e Área
+  (migration `0014`, `NOT NULL DEFAULT ''` na coluna — Compromissos
+  existentes não quebram; `commitment.ErrDescriptionRequired` exige um
+  valor não vazio em Compromissos novos, mesma regra do título). A mensagem
+  de Cobrança (`internal/jobs/entregador.go`) muda de "Título venceu em
+  DD/MM HH:MM" para título em negrito no topo (reconhecimento), Área e
+  descrição abaixo (o que é), vencimento por último —
+  `OccurrenceSummary`/`FindSummary` ganham `AreaName`/`Description` via
+  join com `areas` para isso. Formulário e lista de Compromissos no
+  frontend atualizados.
+
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).
 - `ARCHITECTURE.md`: estrutura do sistema, motor de cobrança, modelo de dados e deploy.

@@ -30,6 +30,8 @@ definitions:
         type: string
       carry_over_policy:
         type: string
+      description:
+        type: string
       id:
         type: string
       label_ids:
@@ -77,6 +79,8 @@ definitions:
         type: string
       carry_over_policy:
         type: string
+      description:
+        type: string
       label_ids:
         items:
           type: string
@@ -92,6 +96,7 @@ definitions:
     required:
     - area_id
     - carry_over_policy
+    - description
     - nag_profile
     - recurrence_start
     - title

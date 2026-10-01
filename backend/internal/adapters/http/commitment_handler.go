@@ -30,6 +30,7 @@ type commitmentResponse struct {
 	ID              string     `json:"id"`
 	AreaID          string     `json:"area_id"`
 	Title           string     `json:"title"`
+	Description     string     `json:"description"`
 	RecurrenceStart time.Time  `json:"recurrence_start"`
 	RecurrenceRule  string     `json:"recurrence_rule,omitempty"`
 	NagProfile      string     `json:"nag_profile"`
@@ -47,6 +48,7 @@ func toCommitmentResponse(c commitmentdomain.Commitment, labelIDs []uuid.UUID) c
 		ID:              c.ID.String(),
 		AreaID:          c.AreaID.String(),
 		Title:           c.Title,
+		Description:     c.Description,
 		RecurrenceStart: c.RecurrenceStart,
 		RecurrenceRule:  c.RecurrenceRule,
 		NagProfile:      string(c.NagProfile),
@@ -58,6 +60,7 @@ func toCommitmentResponse(c commitmentdomain.Commitment, labelIDs []uuid.UUID) c
 
 type createCommitmentRequest struct {
 	Title           string      `json:"title" binding:"required"`
+	Description     string      `json:"description" binding:"required"`
 	AreaID          uuid.UUID   `json:"area_id" binding:"required"`
 	RecurrenceStart time.Time   `json:"recurrence_start" binding:"required"`
 	RecurrenceRule  string      `json:"recurrence_rule"`
@@ -86,6 +89,7 @@ func (h *CommitmentHandler) Create(c *gin.Context) {
 		UserID:          userIDFrom(c),
 		AreaID:          req.AreaID,
 		Title:           req.Title,
+		Description:     req.Description,
 		RecurrenceStart: req.RecurrenceStart,
 		RecurrenceRule:  req.RecurrenceRule,
 		NagProfile:      commitmentdomain.NagProfile(req.NagProfile),
@@ -98,8 +102,8 @@ func (h *CommitmentHandler) Create(c *gin.Context) {
 		// revelaria a quem está tentando que aquele ID existe para outra
 		// pessoa (mesmo raciocínio de auth.ErrInvalidCredentials).
 		if errors.Is(err, commitmentapp.ErrAreaNotFound) || errors.Is(err, commitmentapp.ErrLabelNotFound) ||
-			errors.Is(err, commitmentdomain.ErrTitleRequired) || errors.Is(err, commitmentdomain.ErrInvalidNagProfile) ||
-			errors.Is(err, commitmentdomain.ErrInvalidCarryOverPolicy) {
+			errors.Is(err, commitmentdomain.ErrTitleRequired) || errors.Is(err, commitmentdomain.ErrDescriptionRequired) ||
+			errors.Is(err, commitmentdomain.ErrInvalidNagProfile) || errors.Is(err, commitmentdomain.ErrInvalidCarryOverPolicy) {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}

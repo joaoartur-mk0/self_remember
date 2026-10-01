@@ -99,7 +99,7 @@ func (w *EntregadorWorker) Work(ctx context.Context, job *river.Job[EntregadorAr
 
 	providerID, sendErr := sender.Send(ctx, channel.Message{
 		To:            ch.Address,
-		Body:          fmt.Sprintf("%s venceu em %s", summary.Title, summary.DueAt.Format("02/01 15:04")),
+		Body:          nagMessage(summary),
 		CorrelationID: correlationID,
 	})
 	if sendErr != nil {
@@ -110,6 +110,17 @@ func (w *EntregadorWorker) Work(ctx context.Context, job *river.Job[EntregadorAr
 		return fmt.Errorf("marcar entrega como enviada: %w", err)
 	}
 	return nil
+}
+
+// nagMessage monta o texto de uma Cobrança: título no topo, para
+// reconhecimento (o asterisco é negrito no WhatsApp — canal primário,
+// ADR-0005; em e-mail/texto puro vira literal, inofensivo), Área e
+// descrição abaixo, para dizer o que é, e o vencimento por último.
+func nagMessage(s postgres.OccurrenceSummary) string {
+	return fmt.Sprintf(
+		"*%s*\n\n%s\n%s\n\nVenceu às %s",
+		s.Title, s.AreaName, s.Description, s.DueAt.Format("02/01 15:04"),
+	)
 }
 
 // handleSendFailure registra a falha e, se houver próximo Canal verificado

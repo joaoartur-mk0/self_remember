@@ -204,19 +204,25 @@ func (r *OccurrenceRepository) FindNaggingWithProfile(ctx context.Context) ([]Oc
 }
 
 // OccurrenceSummary é o que o Entregador precisa para compor o texto de uma
-// Cobrança: o título do Compromisso e o vencimento da Ocorrência.
+// Cobrança: título e descrição do Compromisso, a Área a que pertence, e o
+// vencimento da Ocorrência (ARCHITECTURE.md §3.3 — título no topo para
+// reconhecimento, Área e descrição abaixo para dizer o que é).
 type OccurrenceSummary struct {
-	Title string
-	DueAt time.Time
+	Title       string
+	Description string
+	AreaName    string
+	DueAt       time.Time
 }
 
-// FindSummary busca o título do Compromisso e o vencimento de uma Ocorrência.
+// FindSummary busca o título, a descrição, o nome da Área e o vencimento de
+// uma Ocorrência.
 func (r *OccurrenceRepository) FindSummary(ctx context.Context, id uuid.UUID) (OccurrenceSummary, error) {
 	var s OccurrenceSummary
 	err := r.db.WithContext(ctx).
 		Table("occurrences AS o").
-		Select("c.title, o.due_at").
+		Select("c.title, c.description, a.name AS area_name, o.due_at").
 		Joins("JOIN commitments c ON c.id = o.commitment_id").
+		Joins("JOIN areas a ON a.id = c.area_id").
 		Where("o.id = ?", id).
 		Scan(&s).Error
 	return s, err

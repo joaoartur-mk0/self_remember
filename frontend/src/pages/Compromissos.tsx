@@ -39,6 +39,7 @@ export function Compromissos() {
   const [labels, setLabels] = useState<Label[]>([]);
 
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [areaID, setAreaID] = useState("");
   const [recurrenceKind, setRecurrenceKind] = useState<RecurrenceKind>("pontual");
   const [dueDate, setDueDate] = useState(""); // só Pontual: datetime-local
@@ -143,6 +144,7 @@ export function Compromissos() {
     try {
       await api.post("/commitments", {
         title,
+        description,
         area_id: areaID,
         recurrence_start: recurrence.recurrenceStart,
         recurrence_rule: recurrence.recurrenceRule,
@@ -151,6 +153,7 @@ export function Compromissos() {
         label_ids: labelIDs,
       });
       setTitle("");
+      setDescription("");
       setRecurrenceKind("pontual");
       setDueDate("");
       setDueTime("");
@@ -186,6 +189,21 @@ export function Compromissos() {
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-slate-700">
+            Descrição
+          </label>
+          <textarea
+            id="description"
+            required
+            rows={2}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="O que é, pra lembrar na hora da Cobrança — ex.: Losartana, 1 comprimido, com água"
             className={inputClass}
           />
         </div>
@@ -397,7 +415,10 @@ export function Compromissos() {
             key={c.id}
             className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3"
           >
-            <span className="text-slate-900">{c.title}</span>
+            <div>
+              <p className="text-slate-900">{c.title}</p>
+              <p className="text-sm text-slate-500">{c.description}</p>
+            </div>
             <button
               type="button"
               onClick={() => archive(c.id)}

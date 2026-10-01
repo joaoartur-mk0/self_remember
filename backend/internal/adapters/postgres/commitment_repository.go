@@ -49,6 +49,7 @@ type CommitmentModel struct {
 	UserID          uuid.UUID  `gorm:"column:user_id"`
 	AreaID          uuid.UUID  `gorm:"column:area_id"`
 	Title           string     `gorm:"column:title"`
+	Description     string     `gorm:"column:description"`
 	RecurrenceStart time.Time  `gorm:"column:recurrence_start"`
 	RecurrenceRule  string     `gorm:"column:recurrence_rule"`
 	NagProfile      string     `gorm:"column:nag_profile"`
@@ -68,6 +69,7 @@ func (m CommitmentModel) toDomain() commitment.Commitment {
 		UserID:          m.UserID,
 		AreaID:          m.AreaID,
 		Title:           m.Title,
+		Description:     m.Description,
 		RecurrenceStart: m.RecurrenceStart,
 		RecurrenceRule:  m.RecurrenceRule,
 		NagProfile:      commitment.NagProfile(m.NagProfile),
@@ -82,6 +84,7 @@ func commitmentModelFromDomain(c commitment.Commitment) CommitmentModel {
 		UserID:          c.UserID,
 		AreaID:          c.AreaID,
 		Title:           c.Title,
+		Description:     c.Description,
 		RecurrenceStart: c.RecurrenceStart,
 		RecurrenceRule:  c.RecurrenceRule,
 		NagProfile:      string(c.NagProfile),
@@ -145,6 +148,7 @@ func (r *CommitmentRepository) Update(ctx context.Context, c commitment.Commitme
 		Updates(map[string]any{
 			"area_id":           m.AreaID,
 			"title":             m.Title,
+			"description":       m.Description,
 			"recurrence_start":  m.RecurrenceStart,
 			"recurrence_rule":   m.RecurrenceRule,
 			"nag_profile":       m.NagProfile,

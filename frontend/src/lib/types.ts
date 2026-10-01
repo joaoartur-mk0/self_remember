@@ -18,6 +18,7 @@ export interface Commitment {
   id: string;
   area_id: string;
   title: string;
+  description: string;
   recurrence_start: string;
   recurrence_rule?: string;
   nag_profile: NagProfile;

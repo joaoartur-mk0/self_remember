@@ -691,6 +691,9 @@
                 "carry_over_policy": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -759,6 +762,7 @@
             "required": [
                 "area_id",
                 "carry_over_policy",
+                "description",
                 "nag_profile",
                 "recurrence_start",
                 "title"
@@ -768,6 +772,9 @@
                     "type": "string"
                 },
                 "carry_over_policy": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "label_ids": {

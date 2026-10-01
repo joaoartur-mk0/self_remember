@@ -14,6 +14,7 @@ func validCommitment() Commitment {
 		UserID:          uuid.New(),
 		AreaID:          uuid.New(),
 		Title:           "Tomar remédio",
+		Description:     "Losartana, 1 comprimido, com água",
 		NagProfile:      NagProfileNormal,
 		CarryOverPolicy: CarryOverStack,
 	}
@@ -39,6 +40,16 @@ func TestCommitment_Validate(t *testing.T) {
 			name:    "título só com espaços",
 			mutate:  func(c Commitment) Commitment { c.Title = "   "; return c },
 			wantErr: ErrTitleRequired,
+		},
+		{
+			name:    "descrição vazia",
+			mutate:  func(c Commitment) Commitment { c.Description = ""; return c },
+			wantErr: ErrDescriptionRequired,
+		},
+		{
+			name:    "descrição só com espaços",
+			mutate:  func(c Commitment) Commitment { c.Description = "   "; return c },
+			wantErr: ErrDescriptionRequired,
 		},
 		{
 			name:    "perfil de insistência inválido",

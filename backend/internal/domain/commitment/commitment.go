@@ -57,6 +57,7 @@ func (p CarryOverPolicy) Valid() bool {
 
 var (
 	ErrTitleRequired          = errors.New("título é obrigatório")
+	ErrDescriptionRequired    = errors.New("descrição é obrigatória")
 	ErrInvalidNagProfile      = errors.New("perfil de insistência inválido")
 	ErrInvalidCarryOverPolicy = errors.New("política de acúmulo inválida")
 )
@@ -69,6 +70,11 @@ type Commitment struct {
 	UserID uuid.UUID
 	AreaID uuid.UUID
 	Title  string
+	// Description explica o que o Compromisso é — "Título" sozinho
+	// reconhece ("Remédio"), Description diz o quê ("Losartana, 1
+	// comprimido, com água"). Aparece abaixo do título e da Área na
+	// mensagem de Cobrança (internal/jobs/entregador.go).
+	Description string
 
 	// RecurrenceStart é o DTSTART (RFC 5545): a data e o horário de parede do
 	// primeiro vencimento. Para Compromissos não recorrentes, é o próprio
@@ -87,6 +93,9 @@ type Commitment struct {
 func (c Commitment) Validate() error {
 	if strings.TrimSpace(c.Title) == "" {
 		return ErrTitleRequired
+	}
+	if strings.TrimSpace(c.Description) == "" {
+		return ErrDescriptionRequired
 	}
 	if !c.NagProfile.Valid() {
 		return ErrInvalidNagProfile

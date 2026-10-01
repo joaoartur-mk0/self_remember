@@ -56,6 +56,56 @@ func TestNextOccurrenceAfter_Daily(t *testing.T) {
 	}
 }
 
+// TestNextOccurrenceAfter_WeeklyByDay prova que BYDAY explícito com
+// múltiplos dias funciona mesmo quando RecurrenceStart não cai em nenhum
+// deles — o frontend (tela Compromissos, recorrência Semanal) sempre manda
+// "hoje" como RecurrenceStart e deixa BYDAY decidir os dias de verdade.
+func TestNextOccurrenceAfter_WeeklyByDay(t *testing.T) {
+	loc := time.UTC
+	// 2025-01-01 é quarta-feira; a regra só pede segunda e sexta.
+	start := time.Date(2025, 1, 1, 8, 0, 0, 0, time.UTC)
+	c := Commitment{RecurrenceStart: start, RecurrenceRule: "FREQ=WEEKLY;BYDAY=MO,FR"}
+
+	after := time.Date(2025, 1, 1, 9, 0, 0, 0, time.UTC)
+	next, ok, err := c.NextOccurrenceAfter(after, loc)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if !ok {
+		t.Fatal("esperava próxima ocorrência")
+	}
+
+	// A próxima sexta depois de 1º de janeiro de 2025 é 3 de janeiro.
+	want := time.Date(2025, 1, 3, 8, 0, 0, 0, time.UTC)
+	if !next.Equal(want) {
+		t.Fatalf("next = %v, want %v (próxima sexta-feira)", next, want)
+	}
+}
+
+// TestNextOccurrenceAfter_MonthlyByMonthDay prova o mesmo para BYMONTHDAY
+// (recorrência Mensal), também com RecurrenceStart num dia diferente do
+// pedido pela regra.
+func TestNextOccurrenceAfter_MonthlyByMonthDay(t *testing.T) {
+	loc := time.UTC
+	// RecurrenceStart no dia 1; a regra pede todo dia 15.
+	start := time.Date(2025, 1, 1, 8, 0, 0, 0, time.UTC)
+	c := Commitment{RecurrenceStart: start, RecurrenceRule: "FREQ=MONTHLY;BYMONTHDAY=15"}
+
+	after := time.Date(2025, 1, 20, 0, 0, 0, 0, time.UTC)
+	next, ok, err := c.NextOccurrenceAfter(after, loc)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if !ok {
+		t.Fatal("esperava próxima ocorrência")
+	}
+
+	want := time.Date(2025, 2, 15, 8, 0, 0, 0, time.UTC)
+	if !next.Equal(want) {
+		t.Fatalf("next = %v, want %v (dia 15 do mês seguinte)", next, want)
+	}
+}
+
 func TestNextOccurrenceAfter_InvalidRule(t *testing.T) {
 	c := Commitment{
 		RecurrenceStart: time.Now(),

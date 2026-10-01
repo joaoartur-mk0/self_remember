@@ -5,16 +5,32 @@ import { api, ApiError } from "../lib/api";
 import type { Area, CarryOverPolicy, Commitment, Label, NagProfile, Settings } from "../lib/types";
 
 const inputClass = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm";
+const pillClass = (active: boolean) =>
+  `rounded-full border px-3 py-1 text-sm ${
+    active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-700"
+  }`;
 
-// Presets de recorrência — a expansão real (backend/internal/domain/commitment
-// /recurrence.go, via rrule-go) usa DTSTART para o dia da semana/mês, então
-// FREQ sozinho já é suficiente: nenhum BYDAY manual é necessário aqui. Um
-// editor de RRULE livre é trabalho de UI própria, fora deste corte.
-const RECURRENCE_PRESETS: { label: string; rule: string }[] = [
-  { label: "Não repete", rule: "" },
-  { label: "Diário", rule: "FREQ=DAILY" },
-  { label: "Semanal", rule: "FREQ=WEEKLY" },
-  { label: "Mensal", rule: "FREQ=MONTHLY" },
+type RecurrenceKind = "pontual" | "diario" | "semanal" | "mensal";
+
+const RECURRENCE_KINDS: { value: RecurrenceKind; label: string }[] = [
+  { value: "pontual", label: "Pontual" },
+  { value: "diario", label: "Diário" },
+  { value: "semanal", label: "Semanal" },
+  { value: "mensal", label: "Mensal" },
+];
+
+// Valores no formato BYDAY do RRULE (RFC 5545) — a expansão real
+// (backend/internal/domain/commitment/recurrence.go, via rrule-go) aceita
+// qualquer RRULE válida, então BYDAY/BYMONTHDAY explícitos aqui bastam; o
+// backend não precisa de nenhuma mudança.
+const WEEKDAYS: { value: string; label: string }[] = [
+  { value: "MO", label: "Seg" },
+  { value: "TU", label: "Ter" },
+  { value: "WE", label: "Qua" },
+  { value: "TH", label: "Qui" },
+  { value: "FR", label: "Sex" },
+  { value: "SA", label: "Sáb" },
+  { value: "SU", label: "Dom" },
 ];
 
 export function Compromissos() {
@@ -24,8 +40,11 @@ export function Compromissos() {
 
   const [title, setTitle] = useState("");
   const [areaID, setAreaID] = useState("");
-  const [recurrenceStart, setRecurrenceStart] = useState("");
-  const [recurrenceRule, setRecurrenceRule] = useState("");
+  const [recurrenceKind, setRecurrenceKind] = useState<RecurrenceKind>("pontual");
+  const [dueDate, setDueDate] = useState(""); // só Pontual: datetime-local
+  const [dueTime, setDueTime] = useState(""); // Diário/Semanal/Mensal: só a hora
+  const [weekdays, setWeekdays] = useState<string[]>([]); // só Semanal
+  const [monthDay, setMonthDay] = useState(1); // só Mensal
   const [nagProfile, setNagProfile] = useState<NagProfile>("normal");
   const [carryOverPolicy, setCarryOverPolicy] = useState<CarryOverPolicy>("stack");
   const [labelIDs, setLabelIDs] = useState<string[]>([]);
@@ -56,23 +75,69 @@ export function Compromissos() {
     setLabelIDs((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]));
   }
 
+  function toggleWeekday(value: string) {
+    setWeekdays((prev) => (prev.includes(value) ? prev.filter((w) => w !== value) : [...prev, value]));
+  }
+
+  // Monta recurrence_start/recurrence_rule a partir dos campos específicos de
+  // cada tipo de recorrência. null significa "campos insuficientes" — quem
+  // chama decide a mensagem de erro, não esta função. A data de
+  // recurrence_start fora do modo Pontual é só uma âncora (DTSTART) para o
+  // rrule-go contar os períodos a partir dela; quem decide em quais dias a
+  // recorrência cai de verdade é BYDAY/BYMONTHDAY, por isso usar "hoje" aqui
+  // é seguro mesmo que hoje não seja um desses dias.
+  function buildRecurrence(): { recurrenceStart: string; recurrenceRule?: string } | null {
+    if (recurrenceKind === "pontual") {
+      if (!dueDate) return null;
+      return { recurrenceStart: new Date(dueDate).toISOString() };
+    }
+
+    if (!dueTime) return null;
+    const [hours, minutes] = dueTime.split(":").map(Number);
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+
+    if (recurrenceKind === "diario") {
+      return { recurrenceStart: start.toISOString(), recurrenceRule: "FREQ=DAILY" };
+    }
+    if (recurrenceKind === "semanal") {
+      if (weekdays.length === 0) return null;
+      return { recurrenceStart: start.toISOString(), recurrenceRule: `FREQ=WEEKLY;BYDAY=${weekdays.join(",")}` };
+    }
+    return { recurrenceStart: start.toISOString(), recurrenceRule: `FREQ=MONTHLY;BYMONTHDAY=${monthDay}` };
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const recurrence = buildRecurrence();
+    if (!recurrence) {
+      setError(
+        recurrenceKind === "semanal"
+          ? "Selecione ao menos um dia da semana."
+          : "Informe a data/horário da recorrência.",
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.post("/commitments", {
         title,
         area_id: areaID,
-        recurrence_start: new Date(recurrenceStart).toISOString(),
-        recurrence_rule: recurrenceRule || undefined,
+        recurrence_start: recurrence.recurrenceStart,
+        recurrence_rule: recurrence.recurrenceRule,
         nag_profile: nagProfile,
         carry_over_policy: carryOverPolicy,
         label_ids: labelIDs,
       });
       setTitle("");
-      setRecurrenceStart("");
-      setRecurrenceRule("");
+      setRecurrenceKind("pontual");
+      setDueDate("");
+      setDueTime("");
+      setWeekdays([]);
+      setMonthDay(1);
       setLabelIDs([]);
       await reloadCommitments();
     } catch {
@@ -130,38 +195,118 @@ export function Compromissos() {
         </div>
 
         <div>
-          <label htmlFor="recurrence-start" className="block text-sm font-medium text-slate-700">
-            Vencimento inicial
-          </label>
-          <input
-            id="recurrence-start"
-            required
-            type="datetime-local"
-            value={recurrenceStart}
-            onChange={(e) => setRecurrenceStart(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-
-        <div>
           <span className="block text-sm font-medium text-slate-700">Recorrência</span>
           <div className="flex flex-wrap gap-2">
-            {RECURRENCE_PRESETS.map((preset) => (
+            {RECURRENCE_KINDS.map((k) => (
               <button
                 type="button"
-                key={preset.label}
-                onClick={() => setRecurrenceRule(preset.rule)}
-                className={`rounded-full border px-3 py-1 text-sm ${
-                  recurrenceRule === preset.rule
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-300 text-slate-700"
-                }`}
+                key={k.value}
+                onClick={() => setRecurrenceKind(k.value)}
+                className={pillClass(recurrenceKind === k.value)}
               >
-                {preset.label}
+                {k.label}
               </button>
             ))}
           </div>
         </div>
+
+        {recurrenceKind === "pontual" && (
+          <div>
+            <label htmlFor="due-date" className="block text-sm font-medium text-slate-700">
+              Data e hora
+            </label>
+            <input
+              id="due-date"
+              required
+              type="datetime-local"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+        )}
+
+        {recurrenceKind === "diario" && (
+          <div>
+            <label htmlFor="due-time" className="block text-sm font-medium text-slate-700">
+              Horário
+            </label>
+            <input
+              id="due-time"
+              required
+              type="time"
+              value={dueTime}
+              onChange={(e) => setDueTime(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+        )}
+
+        {recurrenceKind === "semanal" && (
+          <div className="space-y-2">
+            <div>
+              <span className="block text-sm font-medium text-slate-700">Dias da semana</span>
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAYS.map((w) => (
+                  <button
+                    type="button"
+                    key={w.value}
+                    onClick={() => toggleWeekday(w.value)}
+                    className={pillClass(weekdays.includes(w.value))}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label htmlFor="due-time" className="block text-sm font-medium text-slate-700">
+                Horário
+              </label>
+              <input
+                id="due-time"
+                required
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        )}
+
+        {recurrenceKind === "mensal" && (
+          <div className="flex gap-4">
+            <div>
+              <label htmlFor="month-day" className="block text-sm font-medium text-slate-700">
+                Dia do mês
+              </label>
+              <input
+                id="month-day"
+                required
+                type="number"
+                min={1}
+                max={31}
+                value={monthDay}
+                onChange={(e) => setMonthDay(Number(e.target.value))}
+                className={`${inputClass} w-20`}
+              />
+            </div>
+            <div className="flex-1">
+              <label htmlFor="due-time" className="block text-sm font-medium text-slate-700">
+                Horário
+              </label>
+              <input
+                id="due-time"
+                required
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-4">
           <div className="flex-1">

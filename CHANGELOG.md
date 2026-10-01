@@ -186,6 +186,16 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   Área já cadastrada; `Compromissos` repassa `onChange` para manter seu
   próprio `<select>` sincronizado sem cada um buscar `/areas` por conta
   própria.
+- Formulário de Compromissos: o campo único "Vencimento inicial" + presets de
+  RRULE sem parâmetro deu lugar a campos por tipo de recorrência — Pontual
+  pede data e hora; Diário só a hora; Semanal, os dias da semana (múltiplos)
+  e a hora; Mensal, o dia do mês e a hora. Sem mudança no backend: a
+  expansão (`rrule-go`) já aceita RRULE livre, então o frontend só passou a
+  montar `BYDAY=MO,FR` / `BYMONTHDAY=15` explícitos em vez de deixar
+  implícito no `DTSTART`. Dois testes novos
+  (`TestNextOccurrenceAfter_WeeklyByDay`/`_MonthlyByMonthDay`) travam que
+  isso funciona mesmo com `RecurrenceStart` ("hoje", que é só a âncora) num
+  dia diferente do pedido pela regra.
 
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).

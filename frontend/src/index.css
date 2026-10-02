@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+/* Tema padrão do Self Remember é escuro — sem alternância para claro por
+   enquanto (pedido explícito: "tema padrão... será escuro"). color-scheme
+   ajusta os controles nativos do navegador (scrollbar, date/time picker)
+   pra combinar, sem precisar de CSS própria pra cada um. */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-slate-950);
+}

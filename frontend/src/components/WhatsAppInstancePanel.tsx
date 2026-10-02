@@ -85,15 +85,15 @@ export function WhatsAppInstancePanel() {
   }
 
   return (
-    <div className="max-w-sm space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-900">Instância WhatsApp</h2>
+    <div className="max-w-sm space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-4">
+      <h2 className="text-sm font-semibold text-slate-100">Instância WhatsApp</h2>
 
-      {error && <p className="text-sm text-red-600">EvolutionAPI inacessível.</p>}
+      {error && <p className="text-sm text-red-400">EvolutionAPI inacessível.</p>}
 
       {!error && (
-        <p className="text-sm text-slate-700">
+        <p className="text-sm text-slate-300">
           Estado:{" "}
-          <span className="font-medium">
+          <span className="font-medium text-slate-100">
             {state ? (STATE_LABELS[state] ?? state) : "consultando..."}
           </span>
         </p>
@@ -101,8 +101,8 @@ export function WhatsAppInstancePanel() {
 
       {state !== "open" && qrCode && (
         <div>
-          <img src={qrCode} alt="QR code para pareamento do WhatsApp" className="w-48" />
-          <p className="mt-1 text-xs text-slate-500">Escaneie com o WhatsApp do número desta instância.</p>
+          <img src={qrCode} alt="QR code para pareamento do WhatsApp" className="w-48 rounded-md bg-white p-2" />
+          <p className="mt-1 text-xs text-slate-400">Escaneie com o WhatsApp do número desta instância.</p>
         </div>
       )}
 
@@ -111,7 +111,7 @@ export function WhatsAppInstancePanel() {
           type="button"
           onClick={handleRequestNewQr}
           disabled={requestingQr}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className="rounded-md border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50"
         >
           {requestingQr ? "Gerando..." : qrCode ? "Gerar novo QR code" : "Gerar QR code"}
         </button>

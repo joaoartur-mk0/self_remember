@@ -196,6 +196,10 @@ retroativamente.
 Vite + React + Tailwind, SPA servida por nginx, consumindo `/api/v1` com JWT em cookie
 `HttpOnly` + `SameSite=Strict`.
 
+Tema padrão é escuro — paleta `slate-950`/`slate-900`/`slate-800` com acento `indigo-500`,
+sem alternância para claro por enquanto. `index.css` fixa `color-scheme: dark` para os
+controles nativos do navegador (scrollbar, date/time picker) acompanharem sem CSS própria.
+
 Três telas bastam para o MVP:
 
 1. **Hoje** — a tela inicial. O que vence hoje e o que está cobrando agora, com os três

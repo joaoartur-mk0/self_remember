@@ -6,7 +6,7 @@ import type { Occurrence } from "../lib/types";
 // Botões de Reconhecimento com peso visual igual — ARCHITECTURE.md §6 é
 // explícito: Concluir, Adiar e Desistir não têm hierarquia entre si.
 const ackButtonClass =
-  "flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50";
+  "flex-1 rounded-md border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50";
 
 export function Hoje() {
   const [occurrences, setOccurrences] = useState<Occurrence[] | null>(null);
@@ -51,23 +51,23 @@ export function Hoje() {
   if (occurrences === null) {
     return (
       <Layout>
-        <p className="text-slate-500">Carregando...</p>
+        <p className="text-slate-400">Carregando...</p>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <h1 className="mb-4 text-lg font-semibold text-slate-900">Hoje</h1>
+      <h1 className="mb-4 text-lg font-semibold text-slate-100">Hoje</h1>
 
-      {occurrences.length === 0 && <p className="text-slate-500">Nada vencendo hoje.</p>}
+      {occurrences.length === 0 && <p className="text-slate-400">Nada vencendo hoje.</p>}
 
       <ul className="space-y-3">
         {occurrences.map((occ) => (
-          <li key={occ.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <li key={occ.id} className="rounded-lg border border-slate-800 bg-slate-900 p-4">
             <div className="mb-3">
-              <p className="font-medium text-slate-900">{occ.title}</p>
-              <p className="text-sm text-slate-500">
+              <p className="font-medium text-slate-100">{occ.title}</p>
+              <p className="text-sm text-slate-400">
                 Vence em {new Date(occ.due_at).toLocaleString()} · Degrau {occ.current_step}
               </p>
             </div>
@@ -78,7 +78,7 @@ export function Hoje() {
                   type="datetime-local"
                   value={snoozeValue}
                   onChange={(e) => setSnoozeValue(e.target.value)}
-                  className="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                  className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <button
                   type="button"

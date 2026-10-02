@@ -247,6 +247,14 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   original do CRUD de Área (o que fazer com Compromissos de uma Área
   removida) se resolve assim: bloquear, nunca apagar ou desvincular em
   cascata. `AreasSection` ganha edição e remoção inline.
+- Tema padrão do Self Remember passa a ser escuro em todas as telas e
+  componentes — sem alternância para claro por enquanto. Paleta
+  `slate-950` (fundo da página), `slate-900`/`slate-800` (cartões, campos),
+  acento `indigo-500` (botão primário, pílula ativa, link de navegação
+  ativo). `index.css` fixa `color-scheme: dark` para os controles nativos
+  do navegador (scrollbar, date/time picker) acompanharem sem CSS própria
+  pra cada um.
+
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).
 - `ARCHITECTURE.md`: estrutura do sistema, motor de cobrança, modelo de dados e deploy.

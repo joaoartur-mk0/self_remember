@@ -61,3 +61,44 @@ func (r *AreaRepository) FindByIDForUser(ctx context.Context, id, userID uuid.UU
 	}
 	return &m, nil
 }
+
+// UpdateForUser sobrescreve nome e cor de uma Área, restrito ao usuário
+// informado. Devolve gorm.ErrRecordNotFound se não existir ou não pertencer
+// a ele, ErrDuplicateName se o novo nome colidir com outra Área do mesmo
+// usuário.
+func (r *AreaRepository) UpdateForUser(ctx context.Context, id, userID uuid.UUID, name string, color *string) error {
+	result := r.db.WithContext(ctx).
+		Model(&AreaModel{}).
+		Where("id = ? AND user_id = ?", id, userID).
+		Updates(map[string]any{"name": name, "color": color})
+	if result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return ErrDuplicateName
+		}
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// DeleteForUser remove uma Área, restrito ao usuário informado. Devolve
+// gorm.ErrRecordNotFound se não existir ou não pertencer a ele, ErrInUse se
+// algum Compromisso ainda referenciar a Área (commitments.area_id é NOT
+// NULL REFERENCES areas(id), sem ON DELETE — migration 0005).
+func (r *AreaRepository) DeleteForUser(ctx context.Context, id, userID uuid.UUID) error {
+	result := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", id, userID).
+		Delete(&AreaModel{})
+	if result.Error != nil {
+		if isForeignKeyViolation(result.Error) {
+			return ErrInUse
+		}
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}

@@ -67,6 +67,81 @@
                 }
             }
         },
+        "/areas/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "areas"
+                ],
+                "summary": "Editar Área",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID da Área",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novo nome e cor (opcional)",
+                        "name": "area",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.updateAreaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.areaResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Corpo da requisição inválido"
+                    },
+                    "404": {
+                        "description": "Área não encontrada ou não pertence ao usuário"
+                    },
+                    "409": {
+                        "description": "Já existe uma Área com este nome"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "areas"
+                ],
+                "summary": "Remover Área",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID da Área",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Área não encontrada ou não pertence ao usuário"
+                    },
+                    "409": {
+                        "description": "Área ainda tem Compromissos associados"
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Autentica por e-mail e senha e grava os cookies de sessão (access_token e refresh_token).",
@@ -898,6 +973,20 @@
             ],
             "properties": {
                 "due_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.updateAreaRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

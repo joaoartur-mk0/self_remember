@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"self-remember/backend/internal/adapters/postgres"
 )
@@ -88,4 +89,80 @@ func (h *AreaHandler) List(c *gin.Context) {
 		response = append(response, toAreaResponse(a))
 	}
 	c.JSON(http.StatusOK, response)
+}
+
+type updateAreaRequest struct {
+	Name  string  `json:"name" binding:"required"`
+	Color *string `json:"color"`
+}
+
+// Update godoc
+// @Summary      Editar Área
+// @Tags         areas
+// @Accept       json
+// @Produce      json
+// @Param        id    path  string             true  "ID da Área"
+// @Param        area  body  updateAreaRequest  true  "Novo nome e cor (opcional)"
+// @Success      200  {object}  areaResponse
+// @Failure      400  "Corpo da requisição inválido"
+// @Failure      404  "Área não encontrada ou não pertence ao usuário"
+// @Failure      409  "Já existe uma Área com este nome"
+// @Router       /areas/{id} [put]
+func (h *AreaHandler) Update(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	var req updateAreaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	userID := userIDFrom(c)
+	if err := h.areas.UpdateForUser(c.Request.Context(), id, userID, req.Name, req.Color); err != nil {
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			c.AbortWithStatus(http.StatusNotFound)
+		case errors.Is(err, postgres.ErrDuplicateName):
+			c.AbortWithStatus(http.StatusConflict)
+		default:
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, areaResponse{ID: id.String(), Name: req.Name, Color: req.Color})
+}
+
+// Delete godoc
+// @Summary      Remover Área
+// @Tags         areas
+// @Param        id  path  string  true  "ID da Área"
+// @Success      204
+// @Failure      404  "Área não encontrada ou não pertence ao usuário"
+// @Failure      409  "Área ainda tem Compromissos associados"
+// @Router       /areas/{id} [delete]
+func (h *AreaHandler) Delete(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if err := h.areas.DeleteForUser(c.Request.Context(), id, userIDFrom(c)); err != nil {
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			c.AbortWithStatus(http.StatusNotFound)
+		case errors.Is(err, postgres.ErrInUse):
+			c.AbortWithStatus(http.StatusConflict)
+		default:
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

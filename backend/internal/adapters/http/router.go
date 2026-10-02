@@ -52,6 +52,8 @@ func NewRouter(h Handlers, tokens *auth.TokenIssuer) *gin.Engine {
 
 	protected.POST("/areas", h.Area.Create)
 	protected.GET("/areas", h.Area.List)
+	protected.PUT("/areas/:id", h.Area.Update)
+	protected.DELETE("/areas/:id", h.Area.Delete)
 
 	protected.POST("/labels", h.Label.Create)
 	protected.GET("/labels", h.Label.List)

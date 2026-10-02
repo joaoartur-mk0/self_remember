@@ -173,6 +173,15 @@ definitions:
     required:
     - due_at
     type: object
+  http.updateAreaRequest:
+    properties:
+      color:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
   http.updateSettingsRequest:
     properties:
       default_carry_over_policy:
@@ -234,6 +243,55 @@ paths:
         "409":
           description: Já existe uma Área com este nome
       summary: Criar Área
+      tags:
+      - areas
+  /areas/{id}:
+    delete:
+      parameters:
+      - description: ID da Área
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Área não encontrada ou não pertence ao usuário
+        "409":
+          description: Área ainda tem Compromissos associados
+      summary: Remover Área
+      tags:
+      - areas
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID da Área
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Novo nome e cor (opcional)
+        in: body
+        name: area
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateAreaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.areaResponse'
+        "400":
+          description: Corpo da requisição inválido
+        "404":
+          description: Área não encontrada ou não pertence ao usuário
+        "409":
+          description: Já existe uma Área com este nome
+      summary: Editar Área
       tags:
       - areas
   /auth/login:

@@ -238,6 +238,15 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   join com `areas` para isso. Formulário e lista de Compromissos no
   frontend atualizados.
 
+- CRUD de Área completo: `PUT/DELETE /api/v1/areas/:id`, escopados por
+  usuário (`AreaRepository.UpdateForUser`/`DeleteForUser`). Remover uma Área
+  com Compromissos associados devolve 409 (`postgres.ErrInUse`, tradução da
+  violação de FK 23503 — `commitments.area_id` é `NOT NULL REFERENCES
+  areas(id)` sem `ON DELETE`, migration 0005) em vez de deixar o Postgres
+  estourar um 500 cru; a decisão de produto que ficou em aberto no commit
+  original do CRUD de Área (o que fazer com Compromissos de uma Área
+  removida) se resolve assim: bloquear, nunca apagar ou desvincular em
+  cascata. `AreasSection` ganha edição e remoção inline.
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).
 - `ARCHITECTURE.md`: estrutura do sistema, motor de cobrança, modelo de dados e deploy.

@@ -1,10 +1,14 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { api, ApiError } from "./lib/api";
-import { Ajustes } from "./pages/Ajustes";
+import { Areas } from "./pages/cadastros/Areas";
 import { Compromissos } from "./pages/Compromissos";
+import { Canais } from "./pages/configuracoes/Canais";
+import { Conexao } from "./pages/configuracoes/Conexao";
+import { Preferencias } from "./pages/configuracoes/Preferencias";
 import { Hoje } from "./pages/Hoje";
 import { Login } from "./pages/Login";
+import { NovoCompromisso } from "./pages/NovoCompromisso";
 import { Painel } from "./pages/Painel";
 
 // RequireAuth confirma sessão com uma chamada autenticada leve antes de
@@ -35,43 +39,25 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function protectedRoute(path: string, element: ReactNode) {
+  return <Route path={path} element={<RequireAuth>{element}</RequireAuth>} />;
+}
+
 export function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <Painel />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/hoje"
-          element={
-            <RequireAuth>
-              <Hoje />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/compromissos"
-          element={
-            <RequireAuth>
-              <Compromissos />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/ajustes"
-          element={
-            <RequireAuth>
-              <Ajustes />
-            </RequireAuth>
-          }
-        />
+        {protectedRoute("/", <Painel />)}
+        {protectedRoute("/hoje", <Hoje />)}
+        {protectedRoute("/compromissos", <Compromissos />)}
+        {protectedRoute("/compromissos/novo", <NovoCompromisso />)}
+        {protectedRoute("/cadastros/areas", <Areas />)}
+        {protectedRoute("/configuracoes/preferencias", <Preferencias />)}
+        {protectedRoute("/configuracoes/canais", <Canais />)}
+        {protectedRoute("/configuracoes/conexao", <Conexao />)}
+        {/* Ajustes foi dividido em Preferências, Canais e Conexão. */}
+        <Route path="/ajustes" element={<Navigate to="/configuracoes/preferencias" replace />} />
       </Routes>
     </BrowserRouter>
   );

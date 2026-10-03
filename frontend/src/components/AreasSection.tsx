@@ -16,7 +16,7 @@ type Props = {
 
 // Áreas: a divisão de topo da vida do usuário à qual um Compromisso
 // pertence (CONTEXT.md) — pré-requisito para criar qualquer Compromisso,
-// por isso fica embutido na própria tela de Compromissos, não em Ajustes.
+// por isso o formulário de Compromisso aponta para o cadastro quando não há nenhuma.
 export function AreasSection({ onChange }: Props) {
   const [areas, setAreas] = useState<Area[]>([]);
   const [name, setName] = useState("");
@@ -95,8 +95,6 @@ export function AreasSection({ onChange }: Props) {
 
   return (
     <div className="mb-6 space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <h2 className="text-sm font-semibold text-slate-100">Áreas</h2>
-
       {areas.length > 0 && (
         <ul className="space-y-2">
           {areas.map((a) =>

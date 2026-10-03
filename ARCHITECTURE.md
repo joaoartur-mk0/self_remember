@@ -208,18 +208,27 @@ agrupados no servidor, no fuso de Ajustes (`GET /api/v1/dashboard`). O risco que
 documento original aponta — o painel bonito esquecido em duas semanas — é por que o Painel
 não tem ações próprias e leva a Hoje.
 
-As telas de trabalho do MVP:
+A navegação é uma barra lateral à esquerda (em telas pequenas, uma faixa no topo com botão
+de menu). Os submenus abrem como acordeão logo abaixo do item, dentro da própria barra:
 
-1. **Hoje** — a tela inicial. O que vence hoje e o que está cobrando agora, com os três
+- **Painel** (`/`), **Hoje** (`/hoje`) e **Compromissos** (`/compromissos`) são itens diretos.
+- **Cadastros** reúne os cadastros de apoio — hoje **Áreas** (`/cadastros/areas`); novos
+  cadastros (ex.: Etiquetas) entram aqui.
+- **Configurações** separa **Preferências** (fuso, Janela de Silêncio e padrões de
+  Compromisso), **Canais** (e-mails e números que recebem a Cobrança, com sua ordem de
+  fallback) e **Conexão WhatsApp** (estado e QR code da instância, uma só — ADR-0001).
+
+As telas de trabalho:
+
+1. **Hoje** — a tela de ação. O que vence hoje e o que está cobrando agora, com os três
    botões de Reconhecimento lado a lado. **Desistir tem o mesmo peso visual que Concluir**;
    escondê-lo faz o usuário concluir mentindo, e aí o sistema perde a capacidade de
    distinguir o que ele faz do que ele só diz que vai fazer.
-2. **Compromissos** — CRUD, recorrência, Área, Perfil de Insistência, Etiquetas.
-3. **Ajustes** — fuso, Janela de Silêncio, Canais e sua ordem de fallback. Também reúne
-   duas seções que não estavam nas três telas originais mas pertencem naturalmente aqui:
-   Preferências padrão de Compromisso (Perfil de Insistência/Política de Acúmulo, só
-   pré-selecionam o formulário) e o painel de status/QR code da instância WhatsApp desta
-   instalação — uma só, não por usuário (ADR-0001).
+2. **Compromissos** — lista de todos os Compromissos ativos (Área, recorrência, Perfil de
+   Insistência); "Novo compromisso" abre o formulário em `/compromissos/novo`. O formulário
+   pede, por tipo de recorrência, só o que cabe a ele (Pontual: data e hora; Diário: hora;
+   Semanal: dias e hora; Mensal: dia do mês e hora) e aponta para o cadastro de Áreas
+   quando não há nenhuma.
 
 Não há Kanban. O documento original define o produto pela negação do painel bonito
 esquecido em duas semanas; construir o painel de cards seria contradizer a própria tese.

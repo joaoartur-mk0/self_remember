@@ -271,6 +271,18 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   de 8 dias isso deixaria até uma semana de cobranças vivas depois de
   arquivar; ambos agora ignoram Compromissos arquivados, assim como o Painel.
 
+- Navegação por barra lateral à esquerda, com submenus em acordeão dentro da
+  própria barra (faixa no topo com botão de menu em telas pequenas).
+  **Cadastros** → Áreas (`/cadastros/areas`, antes embutida em Compromissos).
+  **Configurações** → Preferências, Canais e Conexão WhatsApp, cada um na sua
+  tela (`/configuracoes/*`) — antes tudo isso era a tela Ajustes, agora
+  dividida; `/ajustes` redireciona para Preferências. **Compromissos** passa a
+  ser só a lista (com Área, recorrência resumida e Perfil), e "Novo
+  compromisso" abre o formulário em `/compromissos/novo`, que aponta para o
+  cadastro de Áreas quando não há nenhuma. Sem mudança no backend. A
+  recorrência da lista é lida dos dígitos de `recurrence_start`, sem `Date` —
+  mesma regra de fuso do formulário (`lib/recurrence.ts`).
+
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).
 - `ARCHITECTURE.md`: estrutura do sistema, motor de cobrança, modelo de dados e deploy.

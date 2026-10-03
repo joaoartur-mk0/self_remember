@@ -1,9 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ChannelsSection } from "../components/ChannelsSection";
-import { Layout } from "../components/Layout";
-import { WhatsAppInstancePanel } from "../components/WhatsAppInstancePanel";
-import { api, ApiError } from "../lib/api";
-import type { CarryOverPolicy, NagProfile, Settings } from "../lib/types";
+import { Layout } from "../../components/Layout";
+import { api, ApiError } from "../../lib/api";
+import type { CarryOverPolicy, NagProfile, Settings } from "../../lib/types";
 
 const inputClass =
   "w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
@@ -13,7 +11,7 @@ const inputClass =
 // correspondente e o <select> caia num valor diferente do gravado.
 const TIMEZONES = Intl.supportedValuesOf("timeZone");
 
-export function Ajustes() {
+export function Preferencias() {
   const [timezone, setTimezone] = useState("America/Sao_Paulo");
   const [quietStart, setQuietStart] = useState("");
   const [quietEnd, setQuietEnd] = useState("");
@@ -62,7 +60,7 @@ export function Ajustes() {
       });
       setSaved(true);
     } catch {
-      setError("Não foi possível gravar os Ajustes — confira o fuso e os horários.");
+      setError("Não foi possível gravar as Preferências — confira o fuso e os horários.");
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +68,7 @@ export function Ajustes() {
 
   return (
     <Layout>
-      <h1 className="mb-4 text-lg font-semibold text-slate-100">Ajustes</h1>
+      <h1 className="mb-4 text-lg font-semibold text-slate-100">Preferências</h1>
 
       <form onSubmit={handleSubmit} className="max-w-sm space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
         <div>
@@ -152,7 +150,7 @@ export function Ajustes() {
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
-        {saved && <p className="text-sm text-emerald-400">Ajustes gravados.</p>}
+        {saved && <p className="text-sm text-emerald-400">Preferências gravadas.</p>}
 
         <button
           type="submit"
@@ -162,11 +160,6 @@ export function Ajustes() {
           Salvar
         </button>
       </form>
-
-      <div className="mt-6 space-y-6">
-        <ChannelsSection />
-        <WhatsAppInstancePanel />
-      </div>
     </Layout>
   );
 }

@@ -47,7 +47,7 @@ export function Painel() {
     return (
       <Layout wide>
         <p className="text-slate-400">
-          Defina seu fuso horário em <Link to="/ajustes" className="text-indigo-400 hover:underline">Ajustes</Link> para
+          Defina seu fuso horário em <Link to="/configuracoes/preferencias" className="text-indigo-400 hover:underline">Preferências</Link> para
           ver o painel.
         </p>
       </Layout>

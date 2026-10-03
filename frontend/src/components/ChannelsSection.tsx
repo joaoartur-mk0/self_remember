@@ -80,8 +80,6 @@ export function ChannelsSection() {
 
   return (
     <div className="max-w-sm space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <h2 className="text-sm font-semibold text-slate-100">Canais</h2>
-
       <ul className="space-y-2">
         {channels.map((ch) => (
           <li key={ch.id} className="rounded-md border border-slate-800 p-3">

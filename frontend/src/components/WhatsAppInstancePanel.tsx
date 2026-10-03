@@ -86,8 +86,6 @@ export function WhatsAppInstancePanel() {
 
   return (
     <div className="max-w-sm space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <h2 className="text-sm font-semibold text-slate-100">Instância WhatsApp</h2>
-
       {error && <p className="text-sm text-red-400">EvolutionAPI inacessível.</p>}
 
       {!error && (

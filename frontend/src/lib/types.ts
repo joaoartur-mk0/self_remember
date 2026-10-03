@@ -69,3 +69,28 @@ export interface InstanceStatus {
 export interface InstanceQRCode {
   qrcode: string;
 }
+
+export interface DashboardItem {
+  id: string;
+  title: string;
+  description: string;
+  area_id: string;
+  area_name: string;
+  area_color?: string;
+  nag_profile: NagProfile;
+  due_at: string;
+  state: OccurrenceState;
+  current_step: number;
+}
+
+export interface DashboardDay {
+  // AAAA-MM-DD no fuso de Ajustes — não derivar do navegador.
+  date: string;
+  items: DashboardItem[];
+}
+
+export interface Dashboard {
+  timezone: string;
+  overdue: DashboardItem[];
+  days: DashboardDay[];
+}

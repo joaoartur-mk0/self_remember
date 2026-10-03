@@ -2,7 +2,7 @@
 
 Cada Ocorrência de um Compromisso recorrente é gravada como uma linha real na tabela
 `occurrences`, criada antecipadamente por um job periódico (o Materializador) dentro de um
-horizonte de 48 horas. Não calculamos "quais lembretes vencem agora" expandindo regras de
+horizonte de 8 dias (era 48 horas até o Painel inicial exigir uma agenda de sete dias). Não calculamos "quais lembretes vencem agora" expandindo regras de
 recorrência em tempo de consulta.
 
 A alternativa — guardar só a regra e expandir sob demanda — é mais enxuta e tem um defeito
@@ -18,7 +18,7 @@ ontem ainda está viva.
 - Editar um Compromisso recorrente exige decidir o que fazer com as Ocorrências futuras já
   materializadas. A regra: Ocorrências futuras **ainda não vencidas e sem Entregas** são
   regeradas; as demais são preservadas como estão. O passado nunca é reescrito.
-- O horizonte de materialização (48h) é uma constante operacional: aumentá-lo aumenta o
+- O horizonte de materialização (8 dias) é uma constante operacional: aumentá-lo aumenta o
   custo de regerar após edições.
 - A tabela cresce indefinidamente e precisa de política de retenção/particionamento antes
   do primeiro ano.

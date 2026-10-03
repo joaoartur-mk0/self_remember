@@ -52,6 +52,7 @@ const scannerSelectSQL = `
 	FROM occurrences o
 	JOIN commitments c ON c.id = o.commitment_id
 	WHERE o.state IN ('pending', 'due', 'nagging')
+	  AND c.archived_at IS NULL
 	  AND o.due_at <= $1
 	  AND o.due_at >= $2
 	FOR UPDATE OF o SKIP LOCKED

@@ -12,13 +12,17 @@ import (
 )
 
 // HorizonteMaterializacao é a janela de antecedência em que Ocorrências
-// futuras são criadas (ARCHITECTURE.md §3.1). Usado tanto pela varredura
-// periódica (internal/jobs.MaterializadorWorker, de hora em hora) quanto
+// futuras são criadas (ARCHITECTURE.md §3.1). Oito dias, não sete: o painel
+// inicial mostra a agenda dos próximos 7 dias no fuso do usuário, e a
+// folga de um dia cobre a borda entre o "agora" do servidor e o fim do
+// sétimo dia local (era 48h antes do painel existir).
+//
+// Usado tanto pela varredura periódica (internal/jobs.MaterializadorWorker, de hora em hora) quanto
 // pela materialização eager de um Compromisso recém-criado em CreateUseCase
 // — sem a segunda, o primeiro vencimento de um Compromisso criado logo
 // depois de um tick do Materializador ficaria até 1h sem aparecer na tela
 // Hoje nem disparar nada, mesmo já tendo vencido.
-const HorizonteMaterializacao = 48 * time.Hour
+const HorizonteMaterializacao = 8 * 24 * time.Hour
 
 // materializacaoMaxIteracoes limita quantas Ocorrências uma chamada a
 // Materialize cria por Compromisso — trava de segurança contra uma regra de

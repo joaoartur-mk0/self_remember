@@ -108,6 +108,58 @@ definitions:
     required:
     - name
     type: object
+  http.dashboardDay:
+    properties:
+      date:
+        description: |-
+          Date é AAAA-MM-DD no fuso de Ajustes — o cliente não deve derivar o
+          dia a partir de due_at com o fuso do navegador, que pode ser outro.
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/http.dashboardItem'
+        type: array
+    type: object
+  http.dashboardItem:
+    properties:
+      area_color:
+        type: string
+      area_id:
+        type: string
+      area_name:
+        type: string
+      current_step:
+        type: integer
+      description:
+        type: string
+      due_at:
+        type: string
+      id:
+        type: string
+      nag_profile:
+        type: string
+      state:
+        type: string
+      title:
+        type: string
+    type: object
+  http.dashboardResponse:
+    properties:
+      days:
+        description: |-
+          Days tem sempre dashboardDays entradas, começando em hoje, mesmo as
+          vazias — a agenda mantém a mesma forma a cada acesso.
+        items:
+          $ref: '#/definitions/http.dashboardDay'
+        type: array
+      overdue:
+        description: Overdue são as Ocorrências em aberto de dias anteriores a hoje.
+        items:
+          $ref: '#/definitions/http.dashboardItem'
+        type: array
+      timezone:
+        type: string
+    type: object
   http.instanceQRCodeResponse:
     properties:
       qrcode:
@@ -487,6 +539,22 @@ paths:
       summary: Arquivar Compromisso
       tags:
       - commitments
+  /dashboard:
+    get:
+      description: Dias e atrasadas são calculados no fuso de Ajustes. Só Ocorrências
+        em aberto de Compromissos não arquivados.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.dashboardResponse'
+        "404":
+          description: Usuário sem Ajustes gravados (fuso desconhecido)
+      summary: 'Painel inicial: atrasadas e agenda dos próximos 7 dias'
+      tags:
+      - occurrences
   /labels:
     get:
       produces:

@@ -5,6 +5,7 @@ import { Ajustes } from "./pages/Ajustes";
 import { Compromissos } from "./pages/Compromissos";
 import { Hoje } from "./pages/Hoje";
 import { Login } from "./pages/Login";
+import { Painel } from "./pages/Painel";
 
 // RequireAuth confirma sessão com uma chamada autenticada leve antes de
 // renderizar a rota — sem sessão (401 mesmo após tentativa de refresh em
@@ -41,6 +42,14 @@ export function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route
           path="/"
+          element={
+            <RequireAuth>
+              <Painel />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/hoje"
           element={
             <RequireAuth>
               <Hoje />

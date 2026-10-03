@@ -65,6 +65,7 @@ func NewRouter(h Handlers, tokens *auth.TokenIssuer) *gin.Engine {
 	protected.GET("/commitments", h.Commitment.List)
 	protected.POST("/commitments/:id/archive", h.Commitment.Archive)
 
+	protected.GET("/dashboard", h.Occurrence.Dashboard)
 	protected.GET("/occurrences/today", h.Occurrence.Today)
 	protected.POST("/occurrences/:id/complete", h.Occurrence.Complete)
 	protected.POST("/occurrences/:id/dismiss", h.Occurrence.Dismiss)

@@ -444,6 +444,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/dashboard": {
+            "get": {
+                "description": "Dias e atrasadas são calculados no fuso de Ajustes. Só Ocorrências em aberto de Compromissos não arquivados.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "occurrences"
+                ],
+                "summary": "Painel inicial: atrasadas e agenda dos próximos 7 dias",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.dashboardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário sem Ajustes gravados (fuso desconhecido)"
+                    }
+                }
+            }
+        },
         "/labels": {
             "get": {
                 "produces": [
@@ -886,6 +909,78 @@ const docTemplate = `{
             ],
             "properties": {
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.dashboardDay": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "description": "Date é AAAA-MM-DD no fuso de Ajustes — o cliente não deve derivar o\ndia a partir de due_at com o fuso do navegador, que pode ser outro.",
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.dashboardItem"
+                    }
+                }
+            }
+        },
+        "http.dashboardItem": {
+            "type": "object",
+            "properties": {
+                "area_color": {
+                    "type": "string"
+                },
+                "area_id": {
+                    "type": "string"
+                },
+                "area_name": {
+                    "type": "string"
+                },
+                "current_step": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "due_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nag_profile": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.dashboardResponse": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "description": "Days tem sempre dashboardDays entradas, começando em hoje, mesmo as\nvazias — a agenda mantém a mesma forma a cada acesso.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.dashboardDay"
+                    }
+                },
+                "overdue": {
+                    "description": "Overdue são as Ocorrências em aberto de dias anteriores a hoje.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.dashboardItem"
+                    }
+                },
+                "timezone": {
                     "type": "string"
                 }
             }

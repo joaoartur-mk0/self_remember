@@ -255,6 +255,22 @@ versionamento conforme [SemVer](https://semver.org/lang/pt-BR/).
   do navegador (scrollbar, date/time picker) acompanharem sem CSS própria
   pra cada um.
 
+- Painel inicial (`/`, `GET /api/v1/dashboard`): situa o usuário ao acessar o
+  sistema — Foco do dia (atrasadas + hoje, por severidade: Perfil de
+  Insistência, Degrau atual como desempate), agenda dos próximos 7 dias e
+  resumo por Área, com contadores no topo. Somente leitura; Reconhecer
+  continua só em Hoje, que passa para `/hoje` (ARCHITECTURE.md §6). Os dias
+  são agrupados no servidor, no fuso de Ajustes (`bucketDashboard`, com
+  teste cobrindo o servidor em UTC já no dia seguinte ao do usuário), para
+  não repetir o bug de fuso do navegador de `recurrence_start`.
+- Horizonte de Materialização de 48h para 8 dias — sem isso a agenda da
+  semana ficaria vazia depois de amanhã (ADR-0002 já tratava o horizonte como
+  constante operacional; ADR e §3.1 atualizados).
+- Correção: Compromisso arquivado continuava cobrando e aparecendo em Hoje —
+  nem o Scanner nem `FindDueForUser` filtravam `archived_at`. Com o horizonte
+  de 8 dias isso deixaria até uma semana de cobranças vivas depois de
+  arquivar; ambos agora ignoram Compromissos arquivados, assim como o Painel.
+
 - `CONTEXT.md`: glossário normativo do domínio (Compromisso, Ocorrência, Cobrança,
   Entrega, Canal, Perfil de Insistência, Reconhecimento, Abandono).
 - `ARCHITECTURE.md`: estrutura do sistema, motor de cobrança, modelo de dados e deploy.

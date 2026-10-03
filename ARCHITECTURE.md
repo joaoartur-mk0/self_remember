@@ -53,8 +53,8 @@ requisições HTTP, e o Worker precisa escalar e reiniciar por conta própria.
 
 ### 3.1 Materializador — `PeriodicInterval(1h)`
 
-Lê Compromissos ativos e cria as Ocorrências que vencem nas próximas **48 horas**
-(Horizonte de Materialização), se ainda não existirem. É idempotente por um índice único
+Lê Compromissos ativos e cria as Ocorrências que vencem nos próximos **8 dias**
+(Horizonte de Materialização — sete dias de agenda do painel mais um de folga), se ainda não existirem. É idempotente por um índice único
 em `(commitment_id, due_at)`.
 
 A expansão da recorrência é feita **no fuso do usuário**, não em UTC. Uma regra "todo dia
@@ -200,7 +200,15 @@ Tema padrão é escuro — paleta `slate-950`/`slate-900`/`slate-800` com acento
 sem alternância para claro por enquanto. `index.css` fixa `color-scheme: dark` para os
 controles nativos do navegador (scrollbar, date/time picker) acompanharem sem CSS própria.
 
-Três telas bastam para o MVP:
+O destino ao acessar o sistema é o **Painel**: situa o usuário no dia sem substituir a
+cobrança. Mostra o Foco do dia (atrasadas + hoje, ordenadas por severidade — Perfil de
+Insistência, com o Degrau atual como desempate), a agenda dos próximos 7 dias e um resumo
+por Área. É somente leitura: reconhecer continua exclusivo da tela Hoje, e os dias são
+agrupados no servidor, no fuso de Ajustes (`GET /api/v1/dashboard`). O risco que o
+documento original aponta — o painel bonito esquecido em duas semanas — é por que o Painel
+não tem ações próprias e leva a Hoje.
+
+As telas de trabalho do MVP:
 
 1. **Hoje** — a tela inicial. O que vence hoje e o que está cobrando agora, com os três
    botões de Reconhecimento lado a lado. **Desistir tem o mesmo peso visual que Concluir**;

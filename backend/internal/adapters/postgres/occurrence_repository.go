@@ -142,7 +142,7 @@ func (r *OccurrenceRepository) FindDueForUser(ctx context.Context, userID uuid.U
 		Table("occurrences AS o").
 		Select("o.*, c.title").
 		Joins("JOIN commitments c ON c.id = o.commitment_id").
-		Where("c.user_id = ? AND o.state NOT IN (?, ?, ?) AND o.due_at <= ?",
+		Where("c.user_id = ? AND c.archived_at IS NULL AND o.state NOT IN (?, ?, ?) AND o.due_at <= ?",
 			userID, string(occurrence.StateDone), string(occurrence.StateDismissed), string(occurrence.StateAbandoned), endOfDay).
 		Order("o.due_at ASC").
 		Scan(&rows).Error
@@ -155,6 +155,63 @@ func (r *OccurrenceRepository) FindDueForUser(ctx context.Context, userID uuid.U
 		result = append(result, OccurrenceListItem{
 			Occurrence: rw.OccurrenceModel.toDomain(),
 			Title:      rw.Title,
+		})
+	}
+	return result, nil
+}
+
+// DashboardItem é uma Ocorrência em aberto junto do que o painel inicial
+// precisa para situar o usuário: o que é (título/descrição), a que Área
+// pertence e quão severo é o Compromisso (Perfil de Insistência).
+type DashboardItem struct {
+	Occurrence  occurrence.Occurrence
+	Title       string
+	Description string
+	AreaID      uuid.UUID
+	AreaName    string
+	AreaColor   *string
+	NagProfile  commitment.NagProfile
+}
+
+// FindOpenBefore lista as Ocorrências não terminais de Compromissos não
+// arquivados de um usuário com vencimento estritamente antes de until —
+// inclui as atrasadas. Quem chama calcula until no fuso do usuário; este
+// repositório não sabe de fusos.
+func (r *OccurrenceRepository) FindOpenBefore(ctx context.Context, userID uuid.UUID, until time.Time) ([]DashboardItem, error) {
+	type row struct {
+		OccurrenceModel `gorm:"embedded"`
+		Title           string
+		Description     string
+		AreaID          uuid.UUID
+		AreaName        string
+		AreaColor       *string
+		NagProfile      string
+	}
+	var rows []row
+
+	err := r.db.WithContext(ctx).
+		Table("occurrences AS o").
+		Select("o.*, c.title, c.description, c.area_id, c.nag_profile, a.name AS area_name, a.color AS area_color").
+		Joins("JOIN commitments c ON c.id = o.commitment_id").
+		Joins("JOIN areas a ON a.id = c.area_id").
+		Where("c.user_id = ? AND c.archived_at IS NULL AND o.state NOT IN (?, ?, ?) AND o.due_at < ?",
+			userID, string(occurrence.StateDone), string(occurrence.StateDismissed), string(occurrence.StateAbandoned), until).
+		Order("o.due_at ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]DashboardItem, 0, len(rows))
+	for _, rw := range rows {
+		result = append(result, DashboardItem{
+			Occurrence:  rw.OccurrenceModel.toDomain(),
+			Title:       rw.Title,
+			Description: rw.Description,
+			AreaID:      rw.AreaID,
+			AreaName:    rw.AreaName,
+			AreaColor:   rw.AreaColor,
+			NagProfile:  commitment.NagProfile(rw.NagProfile),
 		})
 	}
 	return result, nil
